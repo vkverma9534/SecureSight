@@ -17,7 +17,7 @@ GUIDE supports research across these complementary SOC workflows by providing re
 ## Data Source and Info
 
 The project will utilize the Microsoft GUIDE (Generalized Incident Understanding Dataset for Enterprises) dataset.
-[text](https://www.kaggle.com/datasets/Microsoft/microsoft-security-incident-prediction/data?select=GUIDE_Test.csv)
+[link to the data](https://www.kaggle.com/datasets/Microsoft/microsoft-security-incident-prediction/data?select=GUIDE_Test.csv)
 
 ### The Dataset contains
  - Over 13 million cybersecurity records
