@@ -79,3 +79,46 @@ chunk_dict = {i: chunk for i, chunk in enumerate(chunks)}
  - **CountryCode** – Country associated with the activity. *(Depends)*
  - **State** – State/region. *(Depends)*
  - **City** – City. *(Depends)*
+
+#### Action
+
+ - We'll start with dropping columns (9) that are almost certainly not required for analysis following are those features along with reasons
+  - **Id** – Pure row identifier
+  - **AlertId** – Unique alert identifier
+  - **DeviceId** – Device-specific ID
+  - **AccountSid** – User SID
+  - **AccountObjectId** – Azure object ID
+  - **NetworkMessageId** – Message ID
+  - **ApplicationId** – Identifier only
+  - **OAuthApplicationId** – Identifier only
+  - **ResourceIdName** – Mostly unique identifier
+
+Hence,
+```python
+input_cols = ['OrgId', 'IncidentId', 'Timestamp', 'DetectorId', 'AlertTitle', 
+              'Category', 'MitreTechniques', 'EntityType', 'EvidenceRole', 'Sha256',
+              'IpAddress', 'Url', 'AccountUpn', 'AccountName', 'DeviceName', 
+              'EmailClusterId', 'RegistryKey', 'RegistryValueName', 
+              'RegistryValueData', 'ApplicationName', 'ThreatFamily', 'FileName',
+              'FolderPath', 'ResourceType', 'Roles', 'OSFamily', 'OSVersion', 
+              'AntispamDirection', 'SuspicionLevel', 'LastVerdict', 'CountryCode',
+              'State', 'City']
+```
+
+and
+
+```python
+target_cols=['IncidentGrade','ActionGrouped','ActionGranular']
+```
+
+#### Target Features
+
+ - IncidentGrade : The final triage label assigned to an alert, indicating whether it is a True Positive, Benign Positive, or False Positive.
+
+ - ActionGrouped : The high-level remediation action recommended for handling the incident, such as Investigate, Block, or Isolate Device.
+
+ - ActionGranular – The specific remediation step to take for the incident, providing a more detailed action than ActionGrouped (e.g., Block File Hash, Disable User Account, Kill Process).
+
+#### Data Profiling
+
+ - 
