@@ -34,48 +34,48 @@ chunk_dict = {i: chunk for i, chunk in enumerate(chunks)}
  - From what I can see there are many columns that are particular to the individual who raised the alert. I do not think such columns help too much in creating models that are too general for detecting vulnerabilities but to get to any concluding decision we need to analyzing each column
 #### Definition for columns
 *The bracket comments the importance of feature*
-- **Id** – Unique record identifier. *(Usually no)*
-- **OrgId** – Organization identifier. *(Depends)*
-- **IncidentId** – Groups related alerts into an incident. *(Usually no)*
-- **AlertId** – Unique alert identifier. *(Usually no)*
-- **Timestamp** – Time the alert was generated. *(Yes)*
-- **DetectorId** – Detection rule that generated the alert. *(Yes)*
-- **AlertTitle** – Name of the triggered detection. *(Yes)*
-- **Category** – Type of security alert. *(Yes)*
-- **MitreTechniques** – MITRE ATT&CK technique(s) detected. *(Yes)*
-- **IncidentGrade** – Triage label (target variable).
-- **ActionGrouped** – High-level remediation action (target for remediation task).
-- **ActionGranular** – Detailed remediation action (target for remediation task).
-- **EntityType** – Type of involved entity. *(Yes)*
-- **EvidenceRole** – Role of the entity in the alert. *(Yes)*
-- **DeviceId** – Unique device identifier. *(Usually no)*
-- **Sha256** – File hash. *(Sometimes)*
-- **IpAddress** – IP address involved. *(Sometimes)*
-- **Url** – URL involved. *(Sometimes)*
-- **AccountSid** – Windows account SID. *(Usually no)*
-- **AccountUpn** – User login (UPN). *(Usually no)*
-- **AccountObjectId** – Azure AD account ID. *(Usually no)*
-- **AccountName** – Username. *(Depends)*
-- **DeviceName** – Device hostname. *(Usually no)*
-- **NetworkMessageId** – Email/message identifier. *(Usually no)*
-- **EmailClusterId** – Identifier for related emails. *(Depends)*
-- **RegistryKey** – Windows registry key. *(Depends)*
-- **RegistryValueName** – Registry value name. *(Depends)*
-- **RegistryValueData** – Registry value content. *(Depends)*
-- **ApplicationId** – Application identifier. *(Usually no)*
-- **ApplicationName** – Application name. *(Depends)*
-- **OAuthApplicationId** – OAuth application identifier. *(Usually no)*
-- **ThreatFamily** – Malware/threat family. *(Yes)*
-- **FileName** – Name of the affected file. *(Sometimes)*
-- **FolderPath** – File directory path. *(Sometimes)*
-- **ResourceIdName** – Cloud resource name/ID. *(Usually no)*
-- **ResourceType** – Type of cloud resource. *(Yes)*
-- **Roles** – Account or resource roles. *(Yes)*
-- **OSFamily** – Operating system family. *(Yes)*
-- **OSVersion** – Operating system version. *(Yes)*
-- **AntispamDirection** – Email direction (inbound/outbound). *(Yes)*
-- **SuspicionLevel** – Detection confidence level. *(Yes)*
-- **LastVerdict** – Final detection verdict. *(Yes)*
-- **CountryCode** – Country associated with the activity. *(Depends)*
-- **State** – State/region. *(Depends)*
-- **City** – City. *(Depends)*
+ - **Id** – Unique record identifier. *(Usually no)*
+ - **OrgId** – Organization identifier. *(Depends)*
+ - **IncidentId** – Groups related alerts into an incident. *(Usually no)*
+ - **AlertId** – Unique alert identifier. *(Usually no)*
+ - **Timestamp** – Time the alert was generated. *(Yes)*
+ - **DetectorId** – Detection rule that generated the alert. *(Yes)*
+ - **AlertTitle** – Name of the triggered detection. *(Yes)*
+ - **Category** – Type of security alert. *(Yes)*
+ - **MitreTechniques** – MITRE ATT&CK technique(s) detected. *(Yes)*
+ - **IncidentGrade** – Triage label (target variable).
+ - **ActionGrouped** – High-level remediation action (target for remediation task).
+ - **ActionGranular** – Detailed remediation action (target for remediation task).
+ - **EntityType** – Type of involved entity. *(Yes)*
+ - **EvidenceRole** – Role of the entity in the alert. *(Yes)*
+ - **DeviceId** – Unique device identifier. *(Usually no)*
+ - **Sha256** – File hash. *(Sometimes)*
+ - **IpAddress** – IP address involved. *(Sometimes)*
+ - **Url** – URL involved. *(Sometimes)*
+ - **AccountSid** – Windows account SID. *(Usually no)*
+ - **AccountUpn** – User login (UPN). *(Usually no)*
+ - **AccountObjectId** – Azure AD account ID. *(Usually no)*
+ - **AccountName** – Username. *(Depends)*
+ - **DeviceName** – Device hostname. *(Usually no)*
+ - **NetworkMessageId** – Email/message identifier. *(Usually no)*
+ - **EmailClusterId** – Identifier for related emails. *(Depends)*
+ - **RegistryKey** – Windows registry key. *(Depends)*
+ - **RegistryValueName** – Registry value name. *(Depends)*
+ - **RegistryValueData** – Registry value content. *(Depends)*
+ - **ApplicationId** – Application identifier. *(Usually no)*
+ - **ApplicationName** – Application name. *(Depends)*
+ - **OAuthApplicationId** – OAuth application identifier. *(Usually no)*
+ - **ThreatFamily** – Malware/threat family. *(Yes)*
+ - **FileName** – Name of the affected file. *(Sometimes)*
+ - **FolderPath** – File directory path. *(Sometimes)*
+ - **ResourceIdName** – Cloud resource name/ID. *(Usually no)*
+ - **ResourceType** – Type of cloud resource. *(Yes)*
+ - **Roles** – Account or resource roles. *(Yes)*
+ - **OSFamily** – Operating system family. *(Yes)*
+ - **OSVersion** – Operating system version. *(Yes)*
+ - **AntispamDirection** – Email direction (inbound/outbound). *(Yes)*
+ - **SuspicionLevel** – Detection confidence level. *(Yes)*
+ - **LastVerdict** – Final detection verdict. *(Yes)*
+ - **CountryCode** – Country associated with the activity. *(Depends)*
+ - **State** – State/region. *(Depends)*
+ - **City** – City. *(Depends)*
