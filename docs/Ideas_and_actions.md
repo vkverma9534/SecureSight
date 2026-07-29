@@ -2,7 +2,7 @@
  - I do not think removing data helps instead we should model some data that work on non null data while some that do not need such data. Since some columns seems to be having no nulls anywhere throughout the dataset so we are assumin them to be non nulls in test.
 
  - We should make the data indepependent of timestamp but to preserve the Seasonal nature we can divide timestamp into season, month, date_of_month, week_of_month, day_of_week and time_of_day.
-
+- Catboost Encoding is a good to go way also Target encoding can be useful other than these many models have their native categorical handling so we can rely on that as well(like: XGBoost Classifier, CatBoost Classifier, LightGBM)
 
 
 
