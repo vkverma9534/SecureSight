@@ -222,7 +222,7 @@ This is the .info() for first chunk to get an idea:
     33  IncidentGrade      795641 non-null  object
     34  ActionGrouped      4761 non-null    object
     35  ActionGranular     4761 non-null    object
-    dtypes: datetime64[ns, UTC](1), float64(1), int64(21), object(13)
+    dtypes: datetime64[ns, UTC] (1), float64(1), int64(21), object(13)
     memory usage: 219.7+ MB
 
 ## Test Data
