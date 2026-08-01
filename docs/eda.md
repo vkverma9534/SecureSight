@@ -152,12 +152,28 @@ freq['count_pct'] = (
 
 #### Top 20 OrgIds
 
-| OrgId | Count | % |
-|------:|------:|--:|
-| 0 | 844789 | 8.90 |
-| 2 | 228325 | 2.41 |
-| 1 | 210044 | 2.21 |
-| ... | ... | ... |
+| OrgId | Count | Count (%) |
+|------:|------:|----------:|
+| 0 | 844789 | 8.90% |
+| 2 | 228325 | 2.41% |
+| 1 | 210044 | 2.21% |
+| 3 | 190866 | 2.01% |
+| 5 | 173431 | 1.83% |
+| 6 | 161092 | 1.70% |
+| 4 | 145741 | 1.54% |
+| 7 | 134532 | 1.42% |
+| 8 | 133637 | 1.41% |
+| 10 | 133160 | 1.40% |
+| 9 | 130807 | 1.38% |
+| 11 | 116134 | 1.22% |
+| 12 | 114799 | 1.21% |
+| 14 | 112681 | 1.19% |
+| 13 | 107259 | 1.13% |
+| 16 | 87836 | 0.93% |
+| 25 | 83539 | 0.88% |
+| 17 | 81424 | 0.86% |
+| 19 | 80168 | 0.84% |
+| 18 | 78881 | 0.83% |
 
 ### Observations
 
@@ -178,3 +194,11 @@ freq['count_pct'] = (
 | 1-3 | 212 |
 
 ![Frequency Distribution](images/freq_distri_org_id.png)
+
+![Contribution Distribution](images/contribution1.png)
+
+- Nearly 25 Orgs appear on ~40% of the data
+
+![Contribution Distribution](images/skewed1.png)
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data
