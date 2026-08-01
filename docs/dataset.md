@@ -91,24 +91,21 @@
  - We'll start with dropping columns (9) that are almost certainly not required for analysis following are those features along with reasons
   - **Id** – Pure row identifier
   - **AlertId** – Unique alert identifier
-  - **DeviceId** – Device-specific ID
   - **AccountSid** – User SID
   - **AccountObjectId** – Azure object ID
   - **NetworkMessageId** – Message ID
-  - **ApplicationId** – Identifier only
   - **OAuthApplicationId** – Identifier only
-  - **ResourceIdName** – Mostly unique identifier
 
 Hence,
 ```python
-input_cols = ['OrgId', 'IncidentId', 'Timestamp', 'DetectorId', 'AlertTitle', 
+input_cols = ['OrgId', 'IncidentId', 'Timestamp', 'DetectorId', 'AlertTitle',
               'Category', 'MitreTechniques', 'EntityType', 'EvidenceRole', 'Sha256',
-              'IpAddress', 'Url', 'AccountUpn', 'AccountName', 'DeviceName', 
-              'EmailClusterId', 'RegistryKey', 'RegistryValueName', 
+              'IpAddress', 'Url', 'AccountUpn', 'AccountName', 'DeviceName',
+              'EmailClusterId', 'RegistryKey', 'RegistryValueName',
               'RegistryValueData', 'ApplicationName', 'ThreatFamily', 'FileName',
-              'FolderPath', 'ResourceType', 'Roles', 'OSFamily', 'OSVersion', 
+              'FolderPath', 'ResourceType', 'Roles', 'OSFamily', 'OSVersion',
               'AntispamDirection', 'SuspicionLevel', 'LastVerdict', 'CountryCode',
-              'State', 'City']
+              'State', 'City','DeviceId','ApplicationId','ResourceIdName']
 ```
 
 and

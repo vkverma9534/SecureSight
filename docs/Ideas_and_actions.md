@@ -3,6 +3,7 @@
 
  - We should make the data indepependent of timestamp but to preserve the Seasonal nature we can divide timestamp into season, month, date_of_month, week_of_month, day_of_week and time_of_day.
 - Catboost Encoding is a good to go way also Target encoding can be useful other than these many models have their native categorical handling so we can rely on that as well(like: XGBoost Classifier, CatBoost Classifier, LightGBM)
+- For High Cardinality data having a long tail (many categories appear less than 10 or even less than 5 times) we can combine it a a different section (say other)
 
 
 
@@ -24,13 +25,10 @@
     - Removed columns that are no contributing in analysis(with reasons) from test as well as validation set
         - **Id** – Pure row identifier
         - **AlertId** – Unique alert identifier
-        - **DeviceId** – Device-specific ID
         - **AccountSid** – User SID
         - **AccountObjectId** – Azure object ID
         - **NetworkMessageId** – Message ID
-        - **ApplicationId** – Identifier only
         - **OAuthApplicationId** – Identifier only
-        - **ResourceIdName** – Mostly unique identifier
 
 
     - Sorted timestamp across chunks and inside chunk
@@ -55,3 +53,10 @@
             chunk_dict[i]=chunk_dict[i][input_cols+target_cols]
         val_df=test_chunk_dict[0][input_cols+target_cols]
 ```
+    - Dropping Duplicate rows from all chunks (Final volume for chunk 797714,797743,797642,797670,797730,797682,797676,797694,797685,714985,797662,797594)
+```python
+        for i in range(len(chunk_dict)):
+            chunk_dict[i]=chunk_dict[i].drop_duplicates()
+            print(len(chunk_dict[i]))
+```  
+    - 
