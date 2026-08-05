@@ -202,3 +202,127 @@ freq['count_pct'] = (
 ![Contribution Distribution](images/skewed1.png)
 
 - We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['OrgId', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['OrgId', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('OrgId')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+result['total_count']=result['FalsePositive']+result['BenignPositive']+result['TruePositive']
+result['FalsePositive_pct']=((result['FalsePositive']/result['total_count'])*100).round(3)
+result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*100).round(3)
+result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
+```
+#### Conditional Target Distribution (Target | OrgId)
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | OrgId)). It helps identify organizations whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+- Organizations with more than 10,000 incidents were ranked by their BenignPositive percentage. Several OrgIds exhibit a very high BenignPositive rate, suggesting a strong relationship between OrgId and the target variable.
+
+```python
+df=result[['OrgId','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+BenignPositive_df=df.sort_values('BenignPositive_pct',ascending=False)
+BenignPositive_df.head(20)
+```
+| OrgId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|-----------------:|
+| 21 | 73,390 | 0.000 | **100.000** | 0.000 |
+| 25 | 83,531 | 0.000 | **100.000** | 0.000 |
+| 120 | 13,382 | 0.000 | **100.000** | 0.000 |
+| 161 | 10,070 | 0.000 | **100.000** | 0.000 |
+| 51 | 40,132 | 0.000 | **100.000** | 0.000 |
+| 12 | 114,799 | 0.014 | 99.986 | 0.000 |
+| 13 | 107,259 | 0.021 | 99.979 | 0.000 |
+| 3 | 190,866 | 0.013 | 99.977 | 0.010 |
+| 83 | 21,209 | 0.038 | 99.962 | 0.000 |
+| 31 | 58,276 | 0.041 | 99.959 | 0.000 |
+| 2 | 228,325 | 0.020 | 99.958 | 0.022 |
+| 133 | 12,658 | 0.063 | 99.937 | 0.000 |
+| 16 | 87,836 | 0.065 | 99.935 | 0.000 |
+| 64 | 30,635 | 0.049 | 99.925 | 0.026 |
+| 44 | 44,096 | 0.061 | 99.850 | 0.088 |
+| 102 | 21,421 | 0.019 | 99.804 | 0.177 |
+| 149 | 11,084 | 0.000 | 99.783 | 0.217 |
+| 40 | 55,287 | 0.127 | 99.745 | 0.128 |
+| 48 | 43,506 | 0.064 | 99.549 | 0.386 |
+| 68 | 25,608 | 0.223 | 99.375 | 0.402 |
+
+##### FalsePositive
+- Organizations with more than 10,000 incidents were ranked by their FalsePositive percentage. Several OrgIds exhibit a very high FalsePositive rate, suggesting a strong relationship between OrgId and the target variable.
+```python
+FalsePositive_df=FalsePositive_df.sort_values('FalsePositive_pct',ascending=False)
+FalsePositive_df.head(20)
+```
+
+| OrgId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|-----------------:|
+| 60 | 23,328 | **100.000** | 0.000 | 0.000 |
+| 88 | 24,244 | **100.000** | 0.000 | 0.000 |
+| 140 | 10,832 | **100.000** | 0.000 | 0.000 |
+| 37 | 64,702 | **100.000** | 0.000 | 0.000 |
+| 79 | 22,131 | 99.991 | 0.000 | 0.009 |
+| 71 | 30,902 | 99.990 | 0.000 | 0.010 |
+| 17 | 81,424 | 99.989 | 0.000 | 0.011 |
+| 119 | 17,343 | 99.983 | 0.000 | 0.017 |
+| 142 | 12,503 | 99.968 | 0.000 | 0.032 |
+| 187 | 10,584 | 99.943 | 0.000 | 0.057 |
+| 47 | 44,531 | 99.879 | 0.115 | 0.007 |
+| 104 | 18,985 | 99.768 | 0.232 | 0.000 |
+| 18 | 78,870 | 99.654 | 0.000 | 0.346 |
+| 124 | 14,009 | 99.557 | 0.000 | 0.443 |
+| 98 | 17,387 | 98.763 | 0.092 | 1.145 |
+| 159 | 10,500 | 96.695 | 0.257 | 3.048 |
+| 11 | 116,134 | 96.469 | 0.000 | 3.531 |
+| 7 | 134,532 | 94.963 | 3.631 | 1.406 |
+| 122 | 14,854 | 93.611 | 1.299 | 5.090 |
+| 87 | 22,213 | 89.614 | 10.003 | 0.383 |
+
+##### TruePositive
+- Organizations with more than 10,000 incidents were ranked by their TruePositive percentage. Several OrgIds exhibit a very high TruePositive rate, suggesting a strong relationship between OrgId and the target variable.
+```python
+TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
+TruePositive_df.head(20)
+```
+
+| OrgId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|-----------------:|
+| 22 | 60,418 | 0.000 | 0.000 | **100.000** |
+| 72 | 25,866 | 0.000 | 0.000 | **100.000** |
+| 110 | 13,545 | 0.000 | 0.000 | **100.000** |
+| 63 | 27,288 | 0.000 | 0.000 | **100.000** |
+| 76 | 22,631 | 0.000 | 0.000 | **100.000** |
+| 0 | 844,782 | 0.005 | 0.000 | 99.995 |
+| 117 | 19,701 | 0.020 | 0.000 | 99.980 |
+| 35 | 46,807 | 0.043 | 0.000 | 99.957 |
+| 148 | 13,856 | 0.058 | 0.000 | 99.942 |
+| 89 | 11,262 | 0.098 | 0.000 | 99.902 |
+| 1 | 210,035 | 0.103 | 0.000 | 99.897 |
+| 90 | 18,579 | 0.151 | 0.000 | 99.849 |
+| 169 | 12,921 | 0.217 | 0.000 | 99.783 |
+| 10 | 133,160 | 0.000 | 0.271 | 99.729 |
+| 41 | 53,993 | 0.267 | 0.035 | 99.698 |
+| 75 | 33,901 | 0.342 | 0.000 | 99.658 |
+| 178 | 12,188 | 0.361 | 0.000 | 99.639 |
+| 8 | 133,629 | 0.058 | 0.542 | 99.400 |
+| 5 | 173,409 | 0.607 | 0.000 | 99.393 |
+| 101 | 18,463 | 0.628 | 0.000 | 99.372 |
+
