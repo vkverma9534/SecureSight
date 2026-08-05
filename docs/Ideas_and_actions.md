@@ -4,6 +4,7 @@
  - We should make the data indepependent of timestamp but to preserve the Seasonal nature we can divide timestamp into season, month, date_of_month, week_of_month, day_of_week and time_of_day.
 - Catboost Encoding is a good to go way also Target encoding can be useful other than these many models have their native categorical handling so we can rely on that as well(like: XGBoost Classifier, CatBoost Classifier, LightGBM)
 - For High Cardinality data having a long tail (many categories appear less than 10 or even less than 5 times) we can combine it a a different section (say other)
+- Make a entropy for each unique for a feature to help model analyse more better
 
 
 
