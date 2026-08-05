@@ -2,7 +2,7 @@ site_name: SecureSight Documentation
 site_url: https://vkverma9534.github.io/SecureSight/
 
 theme:
-  name: mkdocs
+  name: material
 
 nav:
   - Home: index.md
