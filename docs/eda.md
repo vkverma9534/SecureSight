@@ -326,3 +326,41 @@ TruePositive_df.head(20)
 | 5 | 173,409 | 0.607 | 0.000 | 99.393 |
 | 101 | 18,463 | 0.628 | 0.000 | 99.372 |
 
+#### Dominant Class Category
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+result['max_target_pct'] = result[target_cols].max(axis=1) / result['total_count'] * 100
+result['max_target_pct'].describe()
+plt.figure(figsize=(8,5))
+plt.hist(result['max_target_pct'], bins=30)
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of OrgIds")
+plt.title("Distribution of Dominant Target Percentage")
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class1.png)
+
+#### Purity Statistics
+
+100% Pure : 3047
+>99% Pure : 3208
+>95% Pure : 3530
+<80% Pure : 1103
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+result['entropy'] = -(p * np.log2(p.replace(0, np.nan))).sum(axis=1)
+result[['OrgId','entropy']].head()
+plt.figure(figsize=(8,5))
+plt.hist(result['entropy'], bins=30)
+plt.xlabel("Entropy")
+plt.ylabel("Number of OrgIds")
+plt.title("Entropy Distribution Across OrgIds")
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist.png)
+
