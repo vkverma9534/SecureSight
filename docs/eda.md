@@ -364,3 +364,72 @@ plt.show()
 
 ![Entropy Distribution](images/entropy_dist.png)
 
+#### Target Distribtution for top 20 Orgs
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('OrgId')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 OrgIds")
+plt.show()
+```
+
+![Target Distribution For top 20 orgs](images/tar_dist_top_20.png)
+
+#### Dominant Class Count
+```python
+result['majority_class'].value_counts().plot.bar()
+plt.ylabel("Number of OrgIds")
+plt.title("Dominant IncidentGrade per OrgId")
+plt.show()
+```
+![Dominant Class Count](images/dom_class_count.png)
+
+### Relationship with other numeric Cols
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+    corr_list.append(chunk[numeric_cols].corr()['OrgId'])
+
+org_corr = pd.concat(corr_list, axis=1).mean(axis=1)
+org_corr = org_corr.drop('OrgId').sort_values(key=abs, ascending=False)
+
+print(org_corr)
+```
+| Feature | Correlation with OrgId |
+|:------------------|-----------------------:|
+| DetectorId | 0.166254 |
+| IpAddress | 0.116416 |
+| ApplicationName | -0.056599 |
+| ApplicationId | -0.052228 |
+| DeviceName | 0.040555 |
+| AccountName | -0.038584 |
+| City | 0.027538 |
+| FolderPath | 0.026376 |
+| AccountUpn | -0.026347 |
+| IncidentId | 0.025984 |
+| CountryCode | 0.025942 |
+| EmailClusterId | -0.025336 |
+| State | 0.025314 |
+| RegistryValueData | -0.015301 |
+| FileName | 0.011773 |
+| AlertTitle | 0.011576 |
+| Url | 0.011563 |
+| RegistryValueName | -0.011410 |
+| OSVersion | -0.011312 |
+| OSFamily | -0.010892 |
+| DeviceId | 0.007700 |
+| Sha256 | 0.002955 |
+| RegistryKey | -0.002926 |
+
+- Observation: OrgId exhibits generally weak linear correlations with the remaining numeric (identifier) features. The highest positive correlation is with DetectorId (0.166), followed by IpAddress (0.116), while all other correlations are close to zero (|r| < 0.06). This suggests that OrgId captures information largely independent of the other encoded identifier features. Since these variables are high-cardinality identifiers rather than true continuous numeric measurements, Pearson correlation should be interpreted only as a descriptive measure and not as evidence of strong feature dependence
