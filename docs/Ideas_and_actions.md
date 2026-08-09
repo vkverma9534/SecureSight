@@ -6,6 +6,7 @@
 - For High Cardinality data having a long tail (many categories appear less than 10 or even less than 5 times) we can combine it a a different section (say other)
 - Make a entropy for each unique for a feature to help model analyse more better
 - There are only Two OSversion in 99% of data ('66','0') out of which much more than 50% is OSversion '66' we can fill other version as 'Others' or '-1'.
+- OSVersion and OSFamily are almost completely related (corr>0.99) hence putting boot will be exaggeration and won't help much hence OSFamily can be removed from further modelling.
 
 
 
