@@ -433,3 +433,302 @@ print(org_corr)
 | RegistryKey | -0.002926 |
 
 - Observation: OrgId exhibits generally weak linear correlations with the remaining numeric (identifier) features. The highest positive correlation is with DetectorId (0.166), followed by IpAddress (0.116), while all other correlations are close to zero (|r| < 0.06). This suggests that OrgId captures information largely independent of the other encoded identifier features. Since these variables are high-cardinality identifiers rather than true continuous numeric measurements, Pearson correlation should be interpreted only as a descriptive measure and not as evidence of strong feature dependence
+
+## OSVersion
+
+- No need for standardization.
+- No missing values.
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+    s = chunk_dict[i]["OSVersion"]
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+    print(non_numeric.unique())
+```
+
+### Cardinality
+
+- Cardinality is relatively low also most of the incidents are one category of OSVersion,.
+- Number of unique values varies slightly across chunks.
+- Taking the union across all chunks gives **58 unique OSVersion values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+    print(chunk_dict[i]["OSVersion"].nunique())
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+    pd.concat([chunk_dict[i]['OSVersion'] for i in chunk_dict])
+    .value_counts(dropna=False)
+    .rename('count')
+    .reset_index()
+)
+
+```
+- We can clearly see that almost all of OSVersion is '66' with '0' as decent representation anything other than these 2 are almost very low in counts hence count percentage makes not too much sense.
+#### Top 50 OSVersion
+
+| - | OSVersion | count |
+|---|---:|---:|
+| 0 | 66 | 9320086 |
+| 1 | 0 | 187316 |
+| 2 | 2 | 1892 |
+| 3 | 1 | 1651 |
+| 4 | 3 | 1125 |
+| 5 | 4 | 732 |
+| 6 | 6 | 362 |
+| 7 | 5 | 266 |
+| 8 | 8 | 132 |
+| 9 | 9 | 109 |
+| 10 | 10 | 89 |
+| 11 | 7 | 81 |
+| 12 | 11 | 66 |
+| 13 | 12 | 54 |
+| 14 | 16 | 38 |
+| 15 | 13 | 32 |
+| 16 | 14 | 31 |
+| 17 | 15 | 22 |
+| 18 | 19 | 18 |
+| 19 | 17 | 17 |
+| 20 | 20 | 16 |
+| 21 | 22 | 15 |
+| 22 | 21 | 14 |
+| 23 | 24 | 13 |
+| 24 | 26 | 7 |
+| 25 | 25 | 7 |
+| 26 | 27 | 6 |
+| 27 | 31 | 5 |
+| 28 | 28 | 5 |
+| 29 | 35 | 4 |
+| 30 | 33 | 4 |
+| 31 | 40 | 3 |
+| 32 | 42 | 3 |
+| 33 | 29 | 3 |
+| 34 | 41 | 3 |
+| 35 | 37 | 3 |
+| 36 | 38 | 3 |
+| 37 | 43 | 2 |
+| 38 | 46 | 2 |
+| 39 | 30 | 2 |
+| 40 | 34 | 2 |
+| 41 | 23 | 2 |
+| 42 | 44 | 2 |
+| 43 | 45 | 2 |
+| 44 | 64 | 1 |
+| 45 | 53 | 1 |
+| 46 | 65 | 1 |
+| 47 | 63 | 1 |
+| 48 | 52 | 1 |
+| 49 | 47 | 1 |
+
+### Observations
+
+- Only 1 category contribute more than 90%.
+- Total unique categories = **58**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 2 |
+| 1000-10000 | 3 |
+| 100-1000 | 5 |
+| 10-100 | 14 |
+| 5-10 | 5 |
+| 3-5 | 8 |
+| 1-3 | 21 |
+
+![Frequency Distribution](images/freq_distri_os_version.png)
+
+- 1 OSVersion appear on ~90% of the data
+
+| - | OSVersion | count | count_pct | cumsum_count | Rank |
+|---|---:|---:|---:|---:|---:|
+| 0 | 66 | 9320086 | 97.96 | 97.96 | 1 |
+| 1 | 0 | 187316 | 1.97 | 99.93 | 2 |
+| 2 | 2 | 1892 | 0.02 | 99.95 | 3 |
+| 3 | 1 | 1651 | 0.02 | 99.97 | 4 |
+| 4 | 3 | 1125 | 0.01 | 99.98 | 5 |
+
+![Contribution Distribution](images/skewed2.png)
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['OSVersion', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['OSVersion', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('OSVersion')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+result['total_count']=result['FalsePositive']+result['BenignPositive']+result['TruePositive']
+result['FalsePositive_pct']=((result['FalsePositive']/result['total_count'])*100).round(3)
+result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*100).round(3)
+result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
+```
+#### Conditional Target Distribution (Target | OSVersion)
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | OSVersion)). It helps identify organizations whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+- OSVersion with more than 10,000 incidents were ranked by their BenignPositive percentage. Several OSVersions exhibit a very high BenignPositive rate, suggesting a strong relationship between OSVersion and the target variable.Although Only 2 have more than 10000 appearence.
+
+```python
+df=result[['OSVersion','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+BenignPositive_df=df.sort_values('BenignPositive_pct',ascending=False)
+BenignPositive_df.head(20)
+```
+| - | OSVersion | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---|---:|---:|---:|---:|---:|
+| 0 | 0 | 186004 | 20.497 | 63.937 | 15.566 |
+| 57 | 66 | 9270090 | 21.492 | 43.015 | 35.493 |
+
+##### FalsePositive
+- OSVersion with more than 10,000 incidents were ranked by their FalsePositive percentage. Several OSVersions exhibit a very high FalsePositive rate, suggesting a strong relationship between OSVersion and the target variable.Although Only 2 have more than 10000 appearence.
+```python
+FalsePositive_df=FalsePositive_df.sort_values('FalsePositive_pct',ascending=False)
+FalsePositive_df.head(20)
+```
+
+| - | OSVersion | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---|---:|---:|---:|---:|---:|
+| 57 | 66 | 9270090 | 21.492 | 43.015 | 35.493 |
+| 0 | 0 | 186004 | 20.497 | 63.937 | 15.566 |
+
+##### TruePositive
+- OSVersion with more than 10,000 incidents were ranked by their TruePositive percentage. Several OSVersions exhibit a very high TruePositive rate, suggesting a strong relationship between OSVersion and the target variable.Although Only 2 have more than 10000 appearence.
+```python
+TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
+TruePositive_df.head(20)
+```
+
+| - | OSVersion | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---|---:|---:|---:|---:|---:|
+| 57 | 66 | 9270090 | 21.492 | 43.015 | 35.493 |
+| 0 | 0 | 186004 | 20.497 | 63.937 | 15.566 |
+
+#### Dominant Class Category
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+result['max_target_pct'] = result[target_cols].max(axis=1) / result['total_count'] * 100
+result['max_target_pct'].describe()
+plt.figure(figsize=(8,5))
+plt.hist(result['max_target_pct'], bins=30)
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of OSVersions")
+plt.title("Distribution of Dominant Target Percentage")
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class2.png)
+
+#### Purity Statistics
+
+100% Pure : 31
+>99% Pure : 31
+>95% Pure : 31
+<80% Pure : 22
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+result['entropy'] = -(p * np.log2(p.replace(0, np.nan))).sum(axis=1)
+result[['OSVersion','entropy']].head()
+plt.figure(figsize=(8,5))
+plt.hist(result['entropy'], bins=30)
+plt.xlabel("Entropy")
+plt.ylabel("Number of OSVersions")
+plt.title("Entropy Distribution Across OrgIds")
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist1.png)
+
+#### Target Distribtution for top 20 OSVersions
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('OSVersion')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 OSVersions")
+plt.show()
+```
+
+![Target Distribution For top 20 OSVersion](images/tar_dist_top_20_1.png)
+
+#### Dominant Class Count
+```python
+result['majority_class'].value_counts().plot.bar()
+plt.ylabel("Number of OSVersions")
+plt.title("Dominant IncidentGrade per OSVersion")
+plt.show()
+```
+![Dominant Class Count](images/dom_class_count1.png)
+
+### Relationship with other numeric Cols
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+    corr_list.append(chunk[numeric_cols].corr()['OSVersion'])
+
+os_corr = pd.concat(corr_list, axis=1).mean(axis=1)
+os_corr = os_corr.drop('OSVersion').sort_values(key=abs, ascending=False)
+
+print(os_corr)
+```
+| Feature | Correlation with OSVersion |
+|---|---:|
+| OSFamily | 0.999292 |
+| DeviceId | 0.685686 |
+| DeviceName | 0.470725 |
+| AccountUpn | -0.104210 |
+| AccountName | -0.079692 |
+| IpAddress | -0.076495 |
+| FileName | -0.048350 |
+| FolderPath | -0.045041 |
+| IncidentId | -0.043929 |
+| CountryCode | -0.042103 |
+| Sha256 | -0.040546 |
+| Url | -0.038731 |
+| State | -0.038437 |
+| City | -0.038397 |
+| ApplicationName | -0.022121 |
+| ApplicationId | -0.021807 |
+| AlertTitle | 0.011792 |
+| OrgId | -0.011312 |
+| RegistryKey | -0.006119 |
+| DetectorId | -0.004613 |
+| RegistryValueData | -0.003365 |
+| RegistryValueName | -0.003045 |
+| EmailClusterId | NaN |
+
+- Observation: OSVersion exhibits a very strong positive linear correlation with OSFamily (0.999), followed by DeviceId (0.686) and DeviceName (0.471). The remaining features show relatively weak correlations, with the strongest negative relationship observed for AccountUpn (-0.104), while most other correlations are close to zero (|r| < 0.08). This suggests that OSVersion is highly aligned with OSFamily and has some association with device-related identifiers, while capturing information largely independent of the remaining encoded features. Since these variables are predominantly high-cardinality identifiers or categorical features encoded numerically rather than true continuous measurements, Pearson correlation should be interpreted only as a descriptive measure and not as evidence of meaningful causal or feature dependence.

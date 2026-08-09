@@ -5,6 +5,7 @@
 - Catboost Encoding is a good to go way also Target encoding can be useful other than these many models have their native categorical handling so we can rely on that as well(like: XGBoost Classifier, CatBoost Classifier, LightGBM)
 - For High Cardinality data having a long tail (many categories appear less than 10 or even less than 5 times) we can combine it a a different section (say other)
 - Make a entropy for each unique for a feature to help model analyse more better
+- There are only Two OSversion in 99% of data ('66','0') out of which much more than 50% is OSversion '66' we can fill other version as 'Others' or '-1'.
 
 
 
