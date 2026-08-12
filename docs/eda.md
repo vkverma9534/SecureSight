@@ -1101,3 +1101,359 @@ print(DetectorId_corr)
 | OSFamily | -0.004290 |
 
 - Observation: The features show generally weak linear correlations with the DetectorId. AlertTitle (0.266) has the strongest positive correlation, followed by OrgId (0.166), while all others remain below |r| < 0.07. Overall, the features appear largely independent in terms of linear relationships. Since most are high-cardinality identifiers or categorical variables, Pearson correlation should be treated as a descriptive measure only.
+
+## AlertTitle
+
+- No need for standardization.
+- No missing values.
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+    s = chunk_dict[i]["AlertTitle"]
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+    print(non_numeric.unique())
+```
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+- Number of unique values varies highly (almost 30000 categories in difference) across chunks.
+- Taking the union across all chunks gives **86149 unique AlertTitle values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+    print(chunk_dict[i]["AlertTitle"].nunique())
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+    pd.concat([chunk_dict[i]['AlertTitle'] for i in chunk_dict])
+    .value_counts(dropna=False)
+    .rename('count')
+    .reset_index()
+)
+freq=freq.sort_values('count',ascending=False)
+freq['count_pct(%)']=((freq['count']/9516837)*100).round(3)
+freq['cumsum_pct']=freq['count_pct(%)'].cumsum()
+freq.columns = ['AlertTitle', 'count','count_pct(%)','cumsum_pct']
+```
+
+#### Top 50 AlertTitles
+
+| AlertTitle | count | count_pct(%) | cumsum_pct |
+|-----------:|------:|-------------:|-----------:|
+| 0  | 1330918 | 13.985 | 13.985 |
+| 1  | 774535  | 8.139 | 22.124 |
+| 2  | 597497  | 6.278 | 28.402 |
+| 4  | 413879  | 4.349 | 32.751 |
+| 3  | 412083  | 4.330 | 37.081 |
+| 5  | 334651  | 3.516 | 40.597 |
+| 6  | 308370  | 3.240 | 43.837 |
+| 7  | 145547  | 1.529 | 45.366 |
+| 8  | 135410  | 1.423 | 46.789 |
+| 9  | 117799  | 1.238 | 48.027 |
+| 10 | 105390  | 1.107 | 49.134 |
+| 13 | 97108   | 1.020 | 50.154 |
+| 11 | 93241   | 0.980 | 51.134 |
+| 14 | 91071   | 0.957 | 52.091 |
+| 12 | 88411   | 0.929 | 53.020 |
+| 15 | 77459   | 0.814 | 53.834 |
+| 16 | 62491   | 0.657 | 54.491 |
+| 17 | 59948   | 0.630 | 55.121 |
+| 19 | 57595   | 0.605 | 55.726 |
+| 20 | 54248   | 0.570 | 56.296 |
+| 21 | 50889   | 0.535 | 56.831 |
+| 18 | 49927   | 0.525 | 57.356 |
+| 22 | 49080   | 0.516 | 57.872 |
+| 24 | 44634   | 0.469 | 58.341 |
+| 23 | 40640   | 0.427 | 58.768 |
+| 25 | 40543   | 0.426 | 59.194 |
+| 26 | 37869   | 0.398 | 59.592 |
+| 27 | 36732   | 0.386 | 59.978 |
+| 29 | 34180   | 0.359 | 60.337 |
+| 30 | 31709   | 0.333 | 60.670 |
+| 32 | 29230   | 0.307 | 60.977 |
+| 31 | 28263   | 0.297 | 61.274 |
+| 34 | 28134   | 0.296 | 61.570 |
+| 33 | 27591   | 0.290 | 61.860 |
+| 28 | 26546   | 0.279 | 62.139 |
+| 36 | 26292   | 0.276 | 62.415 |
+| 39 | 25755   | 0.271 | 62.686 |
+| 37 | 25684   | 0.270 | 62.956 |
+| 35 | 25338   | 0.266 | 63.222 |
+| 38 | 24850   | 0.261 | 63.483 |
+| 42 | 24654   | 0.259 | 63.742 |
+| 43 | 23964   | 0.252 | 63.994 |
+| 40 | 22170   | 0.233 | 64.227 |
+| 52 | 19658   | 0.207 | 64.434 |
+| 55 | 19526   | 0.205 | 64.639 |
+| 44 | 19519   | 0.205 | 64.844 |
+| 45 | 19018   | 0.200 | 65.044 |
+| 41 | 18613   | 0.196 | 65.240 |
+| 47 | 17962   | 0.189 | 65.429 |
+| 46 | 17958   | 0.189 | 65.618 |
+
+### Observations
+
+- 55290 categories appear fewer than 10 times.
+- 34394 categories appear fewer than 5 times.
+- Top 10 categories contribute around 50% of the data.
+- Top 50 categories contribute more than 65%.
+- Total unique categories = **86149**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 76 |
+| 1000-10000 | 452 |
+| 100-1000 | 2985 |
+| 10-100 | 27346 |
+| 5-10 | 20896 |
+| 3-5 | 22470 |
+| 1-3 | 11924 |
+
+![Frequency Distribution](images/freq_distri_alerttitle.png)
+
+- Nearly 10 AlertTitles appear on ~50% of the data
+
+![Contribution Distribution](images/skewed4.png)
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['AlertTitle', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['AlertTitle', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('AlertTitle')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+result['total_count']=result['FalsePositive']+result['BenignPositive']+result['TruePositive']
+result['FalsePositive_pct']=((result['FalsePositive']/result['total_count'])*100).round(3)
+result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*100).round(3)
+result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
+```
+#### Conditional Target Distribution (Target | AlertTitle)
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | AlertTitle)). It helps identify AlertTitle whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+- AlertTitle with more than 10,000 incidents were ranked by their BenignPositive percentage. Several AlertTitles exhibit a very high BenignPositive rate, suggesting a strong relationship between AlertTitle and the target variable.
+
+```python
+df=result[['AlertTitle','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+BenignPositive_df=df.sort_values(by=['BenignPositive_pct','total_count'],ascending=[False,False])
+BenignPositive_df.head(20)
+```
+| AlertTitle | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 13 | 96978 | 0.000 | **100.00** | 0.000 |
+| 26 | 37869 | 0.000 | **100.00** | 0.000 |
+| 27 | 36732 | 0.000 | **100.00** | 0.000 |
+| 36 | 26292 | 0.000 | **100.00** | 0.000 |
+| 37 | 25684 | 0.000 | **100.00** | 0.000 |
+| 55 | 19526 | 0.000 | **100.00** | 0.000 |
+| 53 | 15981 | 0.000 | **100.00** | 0.000 |
+| 61 | 14346 | 0.000 | **100.00** | 0.000 |
+| 73 | 11318 | 0.000 | **100.00** | 0.000 |
+| 75 | 10537 | 0.000 | **100.00** | 0.000 |
+| 78 | 10511 | 0.000 | **100.00** | 0.000 |
+| 45 | 19018 | 0.000 | 99.968 | 0.032 |
+| 57 | 14297 | 0.077 | 99.923 | 0.000 |
+| 14 | 90977 | 0.185 | 99.815 | 0.000 |
+| 25 | 40543 | 0.118 | 99.714 | 0.168 |
+| 72 | 11156 | 0.000 | 99.624 | 0.376 |
+| 33 | 27579 | 4.743 | 92.063 | 3.194 |
+| 46 | 17919 | 6.278 | 91.635 | 2.087 |
+| 65 | 13309 | 3.614 | 87.182 | 9.204 |
+| 28 | 26468 | 10.243 | 86.047 | 3.710 |
+
+##### FalsePositive
+- AlertTitle with more than 10,000 incidents were ranked by their FalsePositive percentage. Several AlertTitles exhibit a very high FalsePositive rate, suggesting a strong relationship between AlertTitle and the target variable.
+```python
+FalsePositive_df=df.sort_values(by=['FalsePositive_pct','total_count'],ascending=[False,False])
+FalsePositive_df.head(20)
+```
+
+| AlertTitle | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 32 | 29230 | **100.00** | 0.000 | 0.000 |
+| 38 | 24850 | **100.00** | 0.000 | 0.000 |
+| 43 | 23964 | **100.00** | 0.000 | 0.000 |
+| 44 | 19519 | **100.00** | 0.000 | 0.000 |
+| 47 | 17962 | **100.00** | 0.000 | 0.000 |
+| 56 | 15050 | **100.00** | 0.000 | 0.000 |
+| 64 | 12524 | **100.00** | 0.000 | 0.000 |
+| 40 | 22170 | 99.558 | 0.442 | 0.000 |
+| 7 | 145547 | 86.883 | 13.117 | 0.000 |
+| 68 | 10983 | 81.499 | 11.035 | 7.466 |
+| 10 | 105390 | 64.790 | 33.374 | 1.836 |
+| 29 | 34180 | 64.570 | 34.315 | 1.115 |
+| 35 | 25338 | 61.856 | 38.144 | 0.000 |
+| 19 | 57412 | 54.034 | 30.168 | 15.798 |
+| 15 | 77400 | 51.611 | 1.643 | 46.745 |
+| 69 | 10503 | 49.414 | 33.324 | 17.262 |
+| 31 | 28263 | 47.925 | 52.054 | 0.021 |
+| 85 | 10385 | 47.597 | 18.700 | 33.702 |
+| 18 | 49914 | 41.696 | 40.982 | 17.322 |
+| 77 | 10123 | 39.978 | 42.142 | 17.880 |
+
+##### TruePositive
+- AlertTitle with more than 10,000 incidents were ranked by their TruePositive percentage. Several AlertTitles exhibit a very high TruePositive rate, suggesting a strong relationship between AlertTitle and the target variable.
+```python
+TruePositive_df=df.sort_values(by=['TruePositive_pct','total_count'],ascending=[False,False])
+TruePositive_df.head(20)
+```
+| AlertTitle | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 20 | 54248 | 0.000 | 0.000 | **100.00** |
+| 34 | 28134 | 0.000 | 0.000 | **100.00** |
+| 39 | 25755 | 0.000 | 0.000 | **100.00** |
+| 60 | 13738 | 0.000 | 0.102 | 99.898 |
+| 6 | 308267 | 1.540 | 1.640 | 96.821 |
+| 59 | 14430 | 0.000 | 3.389 | 96.611 |
+| 12 | 88403 | 3.509 | 1.752 | 94.739 |
+| 3 | 411779 | 10.907 | 1.647 | 87.447 |
+| 52 | 19658 | 16.558 | 5.087 | 78.355 |
+| 0 | 1330286 | 22.622 | 1.994 | 75.384 |
+| 21 | 50883 | 4.088 | 28.666 | 67.246 |
+| 41 | 18613 | 24.725 | 18.804 | 56.471 |
+| 48 | 16183 | 17.432 | 32.893 | 49.676 |
+| 15 | 77400 | 51.611 | 1.643 | 46.745 |
+| 70 | 12940 | 31.267 | 23.184 | 45.549 |
+| 30 | 31146 | 29.275 | 33.574 | 37.151 |
+| 4 | 413241 | 4.361 | 58.689 | 36.950 |
+| 16 | 62491 | 0.000 | 63.716 | 36.284 |
+| 71 | 10341 | 35.267 | 28.895 | 35.838 |
+| 1 | 774535 | 15.218 | 49.011 | 35.771 |
+
+#### Dominant Class Category
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+result['max_target_pct'] = result[target_cols].max(axis=1) / result['total_count'] * 100
+result['max_target_pct'].describe()
+plt.figure(figsize=(8,5))
+plt.hist(result['max_target_pct'], bins=30)
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of AlertTitles")
+plt.title("Distribution of Dominant Target Percentage")
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class4.png)
+
+#### Purity Statistics
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
+100% Pure : 77122
+>99% Pure : 77168
+>95% Pure : 77355
+<80% Pure : 1844
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+result['entropy'] = -(p * np.log2(p.replace(0, np.nan))).sum(axis=1)
+result[['AlertTitle','entropy']].head()
+plt.figure(figsize=(8,5))
+plt.hist(result['entropy'], bins=30)
+plt.xlabel("Entropy")
+plt.ylabel("Number of AlertTitles")
+plt.title("Entropy Distribution Across AlertTitles")
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist3.png)
+
+#### Target Distribtution for top 20 AlertTitles
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('AlertTitle')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 AlertTitles")
+plt.show()
+```
+
+![Target Distribution For top 20 AlertTitles](images/tar_dist_top_20_3.png)
+
+#### Dominant Class Count
+```python
+result['majority_class'].value_counts().plot.bar()
+plt.ylabel("Number of AlertTitles")
+plt.title("Dominant IncidentGrade per AlertTitle")
+plt.show()
+```
+![Dominant Class Count](images/dom_class_count3.png)
+
+### Relationship with other numeric Cols
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+    corr_list.append(chunk[numeric_cols].corr()['AlertTitle'])
+
+AlertTitle_corr = pd.concat(corr_list, axis=1).mean(axis=1)
+AlertTitle_corr = AlertTitle_corr.drop('AlertTitle').sort_values(key=abs, ascending=False)
+
+print(AlertTitle_corr)
+```
+| Feature | Correlation |
+|---|---:|
+| DetectorId | 0.266036 |
+| IncidentId | 0.137360 |
+| IpAddress | 0.086313 |
+| FolderPath | -0.077556 |
+| AccountUpn | -0.076641 |
+| CountryCode | 0.074766 |
+| State | 0.068239 |
+| City | 0.068162 |
+| Url | 0.060791 |
+| FileName | -0.033289 |
+| DeviceId | 0.013059 |
+| EmailClusterId | -0.012622 |
+| OSFamily | 0.011968 |
+| OSVersion | 0.011792 |
+| OrgId | 0.011576 |
+| Sha256 | 0.011300 |
+| AccountName | -0.007628 |
+| RegistryKey | 0.006884 |
+| ApplicationName | -0.006560 |
+| ApplicationId | -0.006231 |
+| DeviceName | 0.002786 |
+| RegistryValueName | -0.001178 |
+| RegistryValueData | 0.000107 |
+
+- Observation: The features show generally weak linear correlations with the target. DetectorId (0.266) has the strongest positive correlation, followed by IncidentId (0.137) and IpAddress (0.086). The strongest negative correlations are FolderPath (-0.078) and AccountUpn (-0.077), while most remaining correlations are close to zero. Overall, the features show limited linear dependence. Since most are high-cardinality identifiers or categorical variables, Pearson correlation should be treated as a descriptive measure only.
+
