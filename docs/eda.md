@@ -233,10 +233,10 @@ result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*1
 result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
 ```
 #### Conditional Target Distribution (Target | OrgId)
-- This analysis examines the conditional distribution of the target variable given the feature (P(Target | OrgId)). It helps identify organizations whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | OrgId)). It helps identify org whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
 
 ##### BenignPositive
-- Organizations with more than 10,000 incidents were ranked by their BenignPositive percentage. Several OrgIds exhibit a very high BenignPositive rate, suggesting a strong relationship between OrgId and the target variable.
+- Org with more than 10,000 incidents were ranked by their BenignPositive percentage. Several OrgIds exhibit a very high BenignPositive rate, suggesting a strong relationship between OrgId and the target variable.
 
 ```python
 df=result[['OrgId','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
@@ -267,7 +267,7 @@ BenignPositive_df.head(20)
 | 68 | 25,608 | 0.223 | 99.375 | 0.402 |
 
 ##### FalsePositive
-- Organizations with more than 10,000 incidents were ranked by their FalsePositive percentage. Several OrgIds exhibit a very high FalsePositive rate, suggesting a strong relationship between OrgId and the target variable.
+- Org with more than 10,000 incidents were ranked by their FalsePositive percentage. Several OrgIds exhibit a very high FalsePositive rate, suggesting a strong relationship between OrgId and the target variable.
 ```python
 FalsePositive_df=FalsePositive_df.sort_values('FalsePositive_pct',ascending=False)
 FalsePositive_df.head(20)
@@ -297,7 +297,7 @@ FalsePositive_df.head(20)
 | 87 | 22,213 | 89.614 | 10.003 | 0.383 |
 
 ##### TruePositive
-- Organizations with more than 10,000 incidents were ranked by their TruePositive percentage. Several OrgIds exhibit a very high TruePositive rate, suggesting a strong relationship between OrgId and the target variable.
+- Org with more than 10,000 incidents were ranked by their TruePositive percentage. Several OrgIds exhibit a very high TruePositive rate, suggesting a strong relationship between OrgId and the target variable.
 ```python
 TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
 TruePositive_df.head(20)
@@ -342,6 +342,13 @@ plt.show()
 ![Dominant Class Category](images/dom_class1.png)
 
 #### Purity Statistics
+
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
 
 100% Pure : 3047
 >99% Pure : 3208
@@ -586,7 +593,7 @@ result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*1
 result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
 ```
 #### Conditional Target Distribution (Target | OSVersion)
-- This analysis examines the conditional distribution of the target variable given the feature (P(Target | OSVersion)). It helps identify organizations whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | OSVersion)). It helps identify org whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
 
 ##### BenignPositive
 - OSVersion with more than 10,000 incidents were ranked by their BenignPositive percentage. Several OSVersions exhibit a very high BenignPositive rate, suggesting a strong relationship between OSVersion and the target variable.Although Only 2 have more than 10000 appearence.
@@ -641,6 +648,13 @@ plt.show()
 ![Dominant Class Category](images/dom_class2.png)
 
 #### Purity Statistics
+```python
+
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
 
 100% Pure : 31
 >99% Pure : 31
@@ -750,81 +764,109 @@ for i in range(len(chunk_dict)):
 
 - Cardinality quite high considering the dataset size.
 - Number of unique values varies slightly across chunks.
-- Taking the union across all chunks gives **8428 unique OrgId values** in the training data.
+- Taking the union across all chunks gives **8428 unique DetectorId values** in the training data.
 
 ```python
 for i in range(len(chunk_dict)):
-    print(chunk_dict[i]["OrgId"].nunique())
+    print(chunk_dict[i]["DetectorId"].nunique())
 ```
 
 ### Frequency Distribution
 
 ```python
 freq = (
-    pd.concat([chunk_dict[i]['OrgId'] for i in chunk_dict])
+    pd.concat([chunk_dict[i]['DetectorId'] for i in chunk_dict])
     .value_counts(dropna=False)
     .rename('count')
     .reset_index()
 )
 
-freq.columns = ['OrgId', 'count']
+freq.columns = ['DetectorId', 'count']
 freq['count_pct'] = (
     (freq['count'] / total_valid_rows) * 100
 ).round(2).astype(str) + '%'
 ```
 
-#### Top 20 OrgIds
+#### Top 50 DetectorIds
 
-| OrgId | Count | Count (%) |
-|------:|------:|----------:|
-| 0 | 844789 | 8.90% |
-| 2 | 228325 | 2.41% |
-| 1 | 210044 | 2.21% |
-| 3 | 190866 | 2.01% |
-| 5 | 173431 | 1.83% |
-| 6 | 161092 | 1.70% |
-| 4 | 145741 | 1.54% |
-| 7 | 134532 | 1.42% |
-| 8 | 133637 | 1.41% |
-| 10 | 133160 | 1.40% |
-| 9 | 130807 | 1.38% |
-| 11 | 116134 | 1.22% |
-| 12 | 114799 | 1.21% |
-| 14 | 112681 | 1.19% |
-| 13 | 107259 | 1.13% |
-| 16 | 87836 | 0.93% |
-| 25 | 83539 | 0.88% |
-| 17 | 81424 | 0.86% |
-| 19 | 80168 | 0.84% |
-| 18 | 78881 | 0.83% |
+| DetectorId | count | count_pct(%) |
+|-----------:|------:|-------------:|
+| 0  | 1330918 | 13.985 |
+| 1  | 774535  | 8.139 |
+| 2  | 597497  | 6.278 |
+| 3  | 491016  | 5.159 |
+| 4  | 412083  | 4.330 |
+| 5  | 341823  | 3.592 |
+| 6  | 334651  | 3.516 |
+| 7  | 308370  | 3.240 |
+| 9  | 154113  | 1.619 |
+| 8  | 145547  | 1.529 |
+| 10 | 135410  | 1.423 |
+| 12 | 130925  | 1.376 |
+| 11 | 117799  | 1.238 |
+| 15 | 96978   | 1.019 |
+| 17 | 94545   | 0.993 |
+| 16 | 93610   | 0.984 |
+| 13 | 93241   | 0.980 |
+| 18 | 90809   | 0.954 |
+| 14 | 88411   | 0.929 |
+| 19 | 77459   | 0.814 |
+| 20 | 76300   | 0.802 |
+| 21 | 73760   | 0.775 |
+| 30 | 62978   | 0.662 |
+| 23 | 62491   | 0.657 |
+| 24 | 62187   | 0.653 |
+| 22 | 60006   | 0.631 |
+| 25 | 59948   | 0.630 |
+| 28 | 57595   | 0.605 |
+| 29 | 54248   | 0.570 |
+| 31 | 53103   | 0.558 |
+| 32 | 53062   | 0.558 |
+| 27 | 49927   | 0.525 |
+| 33 | 49080   | 0.516 |
+| 34 | 48669   | 0.511 |
+| 41 | 46422   | 0.488 |
+| 37 | 43456   | 0.457 |
+| 36 | 43110   | 0.453 |
+| 35 | 40640   | 0.427 |
+| 38 | 39279   | 0.413 |
+| 39 | 37869   | 0.398 |
+| 42 | 36732   | 0.386 |
+| 44 | 33491   | 0.352 |
+| 46 | 33171   | 0.349 |
+| 40 | 32895   | 0.346 |
+| 47 | 31709   | 0.333 |
+| 45 | 30907   | 0.325 |
+| 43 | 26546   | 0.279 |
+| 50 | 26292   | 0.276 |
+| 49 | 25338   | 0.266 |
+| 52 | 24002   | 0.252 |
 
 ### Observations
 
-- 1845 categories appear fewer than 10 times.
-- 1123 categories appear fewer than 5 times.
-- Top 25 categories contribute around 40% of the data.
-- Top 50 categories contribute more than 50%.
-- Total unique categories = **5769**.
+- 3723 categories appear fewer than 10 times.
+- 2448 categories appear fewer than 5 times.
+- Top 5 categories contribute around 40% of the data.
+- Top 50 categories contribute more than 75%.
+- Total unique categories = **8428**.
 
 | Appearance | Categories |
 |-----------:|-----------:|
-| 10000+ | 156 |
-| 1000-10000 | 600 |
-| 100-1000 | 1233 |
-| 10-100 | 1935 |
-| 5-10 | 722 |
-| 3-5 | 911 |
-| 1-3 | 212 |
+| 10000+ | 100 |
+| 1000-10000 | 345 |
+| 100-1000 | 1160 |
+| 10-100 | 3162 |
+| 5-10 | 1275 |
+| 3-5 | 1173 |
+| 1-3 | 1213 |
 
-![Frequency Distribution](images/freq_distri_org_id.png)
+![Frequency Distribution](images/freq_distri_detectorid.png)
 
-![Contribution Distribution](images/contribution1.png)
+- Nearly 5 DetectorIds appear on ~40% of the data
 
-- Nearly 25 Orgs appear on ~40% of the data
+![Contribution Distribution](images/skewed3.png)
 
-![Contribution Distribution](images/skewed1.png)
-
-- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data (Although 6,7,8 ids are almost similar putting a bump in trend)
 
 ### Target Distribution
 
@@ -832,10 +874,10 @@ freq['count_pct'] = (
 dfs = []
 
 for i in range(len(chunk_dict)):
-    df = chunk_dict[i][['OrgId', 'IncidentGrade']].copy()
+    df = chunk_dict[i][['DetectorId', 'IncidentGrade']].copy()
 
     category_counts = (
-        df.groupby(['OrgId', 'IncidentGrade'])
+        df.groupby(['DetectorId', 'IncidentGrade'])
           .size()
           .unstack(fill_value=0)
     )
@@ -844,7 +886,7 @@ for i in range(len(chunk_dict)):
 
 result = (
     pd.concat(dfs)
-      .groupby('OrgId')
+      .groupby('DetectorId')
       .sum()
       .reset_index()
 )
@@ -855,99 +897,98 @@ result['FalsePositive_pct']=((result['FalsePositive']/result['total_count'])*100
 result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*100).round(3)
 result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
 ```
-#### Conditional Target Distribution (Target | OrgId)
-- This analysis examines the conditional distribution of the target variable given the feature (P(Target | OrgId)). It helps identify organizations whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+#### Conditional Target Distribution (Target | DetectorId)
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | DetectorId)). It helps identify DetectorId whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
 
 ##### BenignPositive
-- Organizations with more than 10,000 incidents were ranked by their BenignPositive percentage. Several OrgIds exhibit a very high BenignPositive rate, suggesting a strong relationship between OrgId and the target variable.
+- DetectorId with more than 10,000 incidents were ranked by their BenignPositive percentage. Several DetectorIds exhibit a very high BenignPositive rate, suggesting a strong relationship between DetectorId and the target variable.
 
 ```python
-df=result[['OrgId','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
-BenignPositive_df=df.sort_values('BenignPositive_pct',ascending=False)
+df=result[['DetectorId','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+BenignPositive_df=df.sort_values(by=['BenignPositive_pct','total_count'],ascending=[False,False])
 BenignPositive_df.head(20)
 ```
-| OrgId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
-|------:|------------:|------------------:|-------------------:|-----------------:|
-| 21 | 73,390 | 0.000 | **100.000** | 0.000 |
-| 25 | 83,531 | 0.000 | **100.000** | 0.000 |
-| 120 | 13,382 | 0.000 | **100.000** | 0.000 |
-| 161 | 10,070 | 0.000 | **100.000** | 0.000 |
-| 51 | 40,132 | 0.000 | **100.000** | 0.000 |
-| 12 | 114,799 | 0.014 | 99.986 | 0.000 |
-| 13 | 107,259 | 0.021 | 99.979 | 0.000 |
-| 3 | 190,866 | 0.013 | 99.977 | 0.010 |
-| 83 | 21,209 | 0.038 | 99.962 | 0.000 |
-| 31 | 58,276 | 0.041 | 99.959 | 0.000 |
-| 2 | 228,325 | 0.020 | 99.958 | 0.022 |
-| 133 | 12,658 | 0.063 | 99.937 | 0.000 |
-| 16 | 87,836 | 0.065 | 99.935 | 0.000 |
-| 64 | 30,635 | 0.049 | 99.925 | 0.026 |
-| 44 | 44,096 | 0.061 | 99.850 | 0.088 |
-| 102 | 21,421 | 0.019 | 99.804 | 0.177 |
-| 149 | 11,084 | 0.000 | 99.783 | 0.217 |
-| 40 | 55,287 | 0.127 | 99.745 | 0.128 |
-| 48 | 43,506 | 0.064 | 99.549 | 0.386 |
-| 68 | 25,608 | 0.223 | 99.375 | 0.402 |
+| DetectorId | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 15 | 96978  | 0.000 | **100.00** | 0.000 |
+| 16 | 93610  | 0.000 | **100.00** | 0.000 |
+| 18 | 90809  | 0.000 | **100.00** | 0.000 |
+| 30 | 62972  | 0.000 | **100.00** | 0.000 |
+| 24 | 62187  | 0.000 | **100.00** | 0.000 |
+| 34 | 48669  | 0.000 | **100.00** | 0.000 |
+| 38 | 39279  | 0.000 | **100.00** | 0.000 |
+| 39 | 37869  | 0.000 | **100.00** | 0.000 |
+| 42 | 36732  | 0.000 | **100.00** | 0.000 |
+| 46 | 33171  | 0.000 | **100.00** | 0.000 |
+| 45 | 30903  | 0.000 | **100.00** | 0.000 |
+| 50 | 26292  | 0.000 | **100.00** | 0.000 |
+| 55 | 22676  | 0.000 | **100.00** | 0.000 |
+| 54 | 20860  | 0.000 | **100.00** | 0.000 |
+| 67 | 20816  | 0.000 | **100.00** | 0.000 |
+| 60 | 19768  | 0.000 | **100.00** | 0.000 |
+| 74 | 19526  | 0.000 | **100.00** | 0.000 |
+| 77 | 17829  | 0.000 | **100.00** | 0.000 |
+| 65 | 17512  | 0.000 | **100.00** | 0.000 |
+| 72 | 15981  | 0.000 | **100.00** | 0.000 |
 
 ##### FalsePositive
-- Organizations with more than 10,000 incidents were ranked by their FalsePositive percentage. Several OrgIds exhibit a very high FalsePositive rate, suggesting a strong relationship between OrgId and the target variable.
+- DetectorId with more than 10,000 incidents were ranked by their FalsePositive percentage. Several DetectorIds exhibit a very high FalsePositive rate, suggesting a strong relationship between DetectorId and the target variable.
 ```python
-FalsePositive_df=FalsePositive_df.sort_values('FalsePositive_pct',ascending=False)
+FalsePositive_df=df.sort_values(by=['FalsePositive_pct','total_count'],ascending=[False,False])
 FalsePositive_df.head(20)
 ```
 
-| OrgId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
-|------:|------------:|------------------:|-------------------:|-----------------:|
-| 60 | 23,328 | **100.000** | 0.000 | 0.000 |
-| 88 | 24,244 | **100.000** | 0.000 | 0.000 |
-| 140 | 10,832 | **100.000** | 0.000 | 0.000 |
-| 37 | 64,702 | **100.000** | 0.000 | 0.000 |
-| 79 | 22,131 | 99.991 | 0.000 | 0.009 |
-| 71 | 30,902 | 99.990 | 0.000 | 0.010 |
-| 17 | 81,424 | 99.989 | 0.000 | 0.011 |
-| 119 | 17,343 | 99.983 | 0.000 | 0.017 |
-| 142 | 12,503 | 99.968 | 0.000 | 0.032 |
-| 187 | 10,584 | 99.943 | 0.000 | 0.057 |
-| 47 | 44,531 | 99.879 | 0.115 | 0.007 |
-| 104 | 18,985 | 99.768 | 0.232 | 0.000 |
-| 18 | 78,870 | 99.654 | 0.000 | 0.346 |
-| 124 | 14,009 | 99.557 | 0.000 | 0.443 |
-| 98 | 17,387 | 98.763 | 0.092 | 1.145 |
-| 159 | 10,500 | 96.695 | 0.257 | 3.048 |
-| 11 | 116,134 | 96.469 | 0.000 | 3.531 |
-| 7 | 134,532 | 94.963 | 3.631 | 1.406 |
-| 122 | 14,854 | 93.611 | 1.299 | 5.090 |
-| 87 | 22,213 | 89.614 | 10.003 | 0.383 |
+| DetectorId | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 20 | 76300 | **100.00** | 0.000 | 0.000 |
+| 58 | 23964 | **100.00** | 0.000 | 0.000 |
+| 57 | 22019 | **100.00** | 0.000 | 0.000 |
+| 51 | 19590 | **100.00** | 0.000 | 0.000 |
+| 61 | 19519 | **100.00** | 0.000 | 0.000 |
+| 70 | 18923 | **100.00** | 0.000 | 0.000 |
+| 71 | 16359 | **100.00** | 0.000 | 0.000 |
+| 76 | 15050 | **100.00** | 0.000 | 0.000 |
+| 80 | 14248 | **100.00** | 0.000 | 0.000 |
+| 97 | 12974 | **100.00** | 0.000 | 0.000 |
+| 98 | 12461 | **100.00** | 0.000 | 0.000 |
+| 103 | 12389 | **100.00** | 0.000 | 0.000 |
+| 105 | 11490 | **100.00** | 0.000 | 0.000 |
+| 56 | 22170 | 99.558 | 0.442 | 0.000 |
+| 21 | 73760 | 95.883 | 4.117 | 0.000 |
+| 22 | 60006 | 93.781 | 3.075 | 3.145 |
+| 8 | 145547 | 86.883 | 13.117 | 0.000 |
+| 91 | 10983 | 81.499 | 11.035 | 7.466 |
+| 37 | 43456 | 77.338 | 22.662 | 0.000 |
+| 49 | 25338 | 61.856 | 38.144 | 0.000 |
 
 ##### TruePositive
-- Organizations with more than 10,000 incidents were ranked by their TruePositive percentage. Several OrgIds exhibit a very high TruePositive rate, suggesting a strong relationship between OrgId and the target variable.
+- DetectorId with more than 10,000 incidents were ranked by their TruePositive percentage. Several DetectorIds exhibit a very high TruePositive rate, suggesting a strong relationship between DetectorId and the target variable.
 ```python
-TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
+TruePositive_df=df.sort_values(by=['TruePositive_pct','total_count'],ascending=[False,False])
 TruePositive_df.head(20)
 ```
-
-| OrgId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
-|------:|------------:|------------------:|-------------------:|-----------------:|
-| 22 | 60,418 | 0.000 | 0.000 | **100.000** |
-| 72 | 25,866 | 0.000 | 0.000 | **100.000** |
-| 110 | 13,545 | 0.000 | 0.000 | **100.000** |
-| 63 | 27,288 | 0.000 | 0.000 | **100.000** |
-| 76 | 22,631 | 0.000 | 0.000 | **100.000** |
-| 0 | 844,782 | 0.005 | 0.000 | 99.995 |
-| 117 | 19,701 | 0.020 | 0.000 | 99.980 |
-| 35 | 46,807 | 0.043 | 0.000 | 99.957 |
-| 148 | 13,856 | 0.058 | 0.000 | 99.942 |
-| 89 | 11,262 | 0.098 | 0.000 | 99.902 |
-| 1 | 210,035 | 0.103 | 0.000 | 99.897 |
-| 90 | 18,579 | 0.151 | 0.000 | 99.849 |
-| 169 | 12,921 | 0.217 | 0.000 | 99.783 |
-| 10 | 133,160 | 0.000 | 0.271 | 99.729 |
-| 41 | 53,993 | 0.267 | 0.035 | 99.698 |
-| 75 | 33,901 | 0.342 | 0.000 | 99.658 |
-| 178 | 12,188 | 0.361 | 0.000 | 99.639 |
-| 8 | 133,629 | 0.058 | 0.542 | 99.400 |
-| 5 | 173,409 | 0.607 | 0.000 | 99.393 |
-| 101 | 18,463 | 0.628 | 0.000 | 99.372 |
+| DetectorId | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 12 | 130925 | 0.000 | 0.000 | **100.00** |
+| 29 | 54248  | 0.000 | 0.000 | **100.00** |
+| 32 | 53004  | 0.000 | 0.000 | **100.00** |
+| 68 | 19113  | 0.000 | 0.000 | **100.00** |
+| 82 | 13738  | 0.000 | 0.102 | 99.898 |
+| 7 | 308267 | 1.540 | 1.640 | 96.821 |
+| 14 | 88403  | 3.509 | 1.752 | 94.739 |
+| 4 | 411779  | 10.907 | 1.647 | 87.447 |
+| 41 | 46422  | 0.000 | 23.948 | 76.052 |
+| 0 | 1330286 | 22.622 | 1.994 | 75.384 |
+| 66 | 16183  | 17.432 | 32.893 | 49.676 |
+| 19 | 77400  | 51.611 | 1.643 | 46.745 |
+| 5 | 333906  | 17.832 | 37.287 | 44.881 |
+| 47 | 31146  | 29.275 | 33.574 | 37.151 |
+| 23 | 62491  | 0.000 | 63.716 | 36.284 |
+| 1 | 774535  | 15.218 | 49.011 | 35.771 |
+| 44 | 33429  | 15.564 | 50.289 | 34.147 |
+| 3 | 490324  | 6.126 | 59.915 | 33.959 |
+| 35 | 39464  | 22.542 | 48.279 | 29.178 |
+| 10 | 135410 | 5.321 | 66.327 | 28.352 |
 
 #### Dominant Class Category
 ```python
@@ -957,41 +998,46 @@ result['max_target_pct'].describe()
 plt.figure(figsize=(8,5))
 plt.hist(result['max_target_pct'], bins=30)
 plt.xlabel("Dominant Class Percentage")
-plt.ylabel("Number of OrgIds")
+plt.ylabel("Number of DetectorIds")
 plt.title("Distribution of Dominant Target Percentage")
 plt.show()
 ```
 
-![Dominant Class Category](images/dom_class1.png)
+![Dominant Class Category](images/dom_class3.png)
 
 #### Purity Statistics
-
-100% Pure : 3047
->99% Pure : 3208
->95% Pure : 3530
-<80% Pure : 1103
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
+100% Pure : 6163
+>99% Pure : 6201
+>95% Pure : 6325
+<80% Pure : 1007
 
 #### Entrory Distribution
 
 ```python
 p = result[target_cols].div(result['total_count'], axis=0)
 result['entropy'] = -(p * np.log2(p.replace(0, np.nan))).sum(axis=1)
-result[['OrgId','entropy']].head()
+result[['DetectorId','entropy']].head()
 plt.figure(figsize=(8,5))
 plt.hist(result['entropy'], bins=30)
 plt.xlabel("Entropy")
-plt.ylabel("Number of OrgIds")
-plt.title("Entropy Distribution Across OrgIds")
+plt.ylabel("Number of DetectorIds")
+plt.title("Entropy Distribution Across DetectorIds")
 plt.show()
 ```
 
-![Entropy Distribution](images/entropy_dist.png)
+![Entropy Distribution](images/entropy_dist2.png)
 
-#### Target Distribtution for top 20 Orgs
+#### Target Distribtution for top 20 DetectorIds
 ```python
 top = result.nlargest(20,'total_count')
 
-plot_df = top.set_index('OrgId')[
+plot_df = top.set_index('DetectorId')[
     ['FalsePositive_pct',
      'BenignPositive_pct',
      'TruePositive_pct']
@@ -1002,57 +1048,57 @@ plot_df.plot(
     figsize=(12,5)
 )
 plt.ylabel("Percentage")
-plt.title("Target Distribution for Top 20 OrgIds")
+plt.title("Target Distribution for Top 20 DetectorIds")
 plt.show()
 ```
 
-![Target Distribution For top 20 orgs](images/tar_dist_top_20.png)
+![Target Distribution For top 20 DetectorIds](images/tar_dist_top_20_2.png)
 
 #### Dominant Class Count
 ```python
 result['majority_class'].value_counts().plot.bar()
-plt.ylabel("Number of OrgIds")
-plt.title("Dominant IncidentGrade per OrgId")
+plt.ylabel("Number of DetectorIds")
+plt.title("Dominant IncidentGrade per DetectorId")
 plt.show()
 ```
-![Dominant Class Count](images/dom_class_count.png)
+![Dominant Class Count](images/dom_class_count2.png)
 
 ### Relationship with other numeric Cols
 ```python
 corr_list = []
 
 for chunk in chunk_dict.values():
-    corr_list.append(chunk[numeric_cols].corr()['OrgId'])
+    corr_list.append(chunk[numeric_cols].corr()['DetectorId'])
 
-org_corr = pd.concat(corr_list, axis=1).mean(axis=1)
-org_corr = org_corr.drop('OrgId').sort_values(key=abs, ascending=False)
+DetectorId_corr = pd.concat(corr_list, axis=1).mean(axis=1)
+DetectorId_corr = DetectorId_corr.drop('DetectorId').sort_values(key=abs, ascending=False)
 
-print(org_corr)
+print(DetectorId_corr)
 ```
-| Feature | Correlation with OrgId |
-|:------------------|-----------------------:|
-| DetectorId | 0.166254 |
-| IpAddress | 0.116416 |
-| ApplicationName | -0.056599 |
-| ApplicationId | -0.052228 |
-| DeviceName | 0.040555 |
-| AccountName | -0.038584 |
-| City | 0.027538 |
-| FolderPath | 0.026376 |
-| AccountUpn | -0.026347 |
-| IncidentId | 0.025984 |
-| CountryCode | 0.025942 |
-| EmailClusterId | -0.025336 |
-| State | 0.025314 |
-| RegistryValueData | -0.015301 |
-| FileName | 0.011773 |
-| AlertTitle | 0.011576 |
-| Url | 0.011563 |
-| RegistryValueName | -0.011410 |
-| OSVersion | -0.011312 |
-| OSFamily | -0.010892 |
-| DeviceId | 0.007700 |
-| Sha256 | 0.002955 |
-| RegistryKey | -0.002926 |
+| Feature | Correlation |
+|---|---:|
+| AlertTitle | 0.266036 |
+| OrgId | 0.166254 |
+| CountryCode | 0.069545 |
+| State | 0.063594 |
+| City | 0.063315 |
+| IncidentId | 0.059369 |
+| FolderPath | -0.056850 |
+| RegistryValueName | -0.047086 |
+| RegistryValueData | -0.044645 |
+| IpAddress | 0.043654 |
+| Url | 0.040912 |
+| FileName | -0.040087 |
+| DeviceName | -0.032363 |
+| DeviceId | -0.029408 |
+| Sha256 | -0.021057 |
+| EmailClusterId | -0.020634 |
+| ApplicationId | 0.018115 |
+| RegistryKey | -0.015672 |
+| AccountName | -0.015046 |
+| AccountUpn | 0.014795 |
+| ApplicationName | 0.009293 |
+| OSVersion | -0.004613 |
+| OSFamily | -0.004290 |
 
-- Observation: OrgId exhibits generally weak linear correlations with the remaining numeric (identifier) features. The highest positive correlation is with DetectorId (0.166), followed by IpAddress (0.116), while all other correlations are close to zero (|r| < 0.06). This suggests that OrgId captures information largely independent of the other encoded identifier features. Since these variables are high-cardinality identifiers rather than true continuous numeric measurements, Pearson correlation should be interpreted only as a descriptive measure and not as evidence of strong feature dependence
+- Observation: The features show generally weak linear correlations with the DetectorId. AlertTitle (0.266) has the strongest positive correlation, followed by OrgId (0.166), while all others remain below |r| < 0.07. Overall, the features appear largely independent in terms of linear relationships. Since most are high-cardinality identifiers or categorical variables, Pearson correlation should be treated as a descriptive measure only.
