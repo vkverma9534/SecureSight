@@ -1457,3 +1457,304 @@ print(AlertTitle_corr)
 
 - Observation: The features show generally weak linear correlations with the target. DetectorId (0.266) has the strongest positive correlation, followed by IncidentId (0.137) and IpAddress (0.086). The strongest negative correlations are FolderPath (-0.078) and AccountUpn (-0.077), while most remaining correlations are close to zero. Overall, the features show limited linear dependence. Since most are high-cardinality identifiers or categorical variables, Pearson correlation should be treated as a descriptive measure only.
 
+## AccountUpn
+
+- No need for standardization.
+- No missing values.
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+    s = chunk_dict[i]["AccountUpn"]
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+    print(non_numeric.unique())
+```
+
+### Cardinality
+
+- Cardinality is extremely high considering the dataset size.
+- Number of unique values varies highly across chunks.
+- Taking the union across all chunks gives **530183 unique AccountUpn values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+    print(chunk_dict[i]["AccountUpn"].nunique())
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+    pd.concat([chunk_dict[i]['AccountUpn'] for i in chunk_dict])
+    .value_counts(dropna=False)
+    .rename('count')
+    .reset_index()
+)
+freq=freq.sort_values('count',ascending=False)
+freq['count_pct(%)']=((freq['count']/9516837)*100).round(3)
+freq['cumsum_pct']=freq['count_pct(%)'].cumsum()
+freq.columns = ['AccountUpn', 'count','count_pct(%)','cumsum_pct']
+```
+
+#### Top 50 AccountUpns
+
+| AccountUpn | count | count_pct(%) | cumsum_pct |
+|-----------:|------:|-------------:|-----------:|
+| 673934 | 6050715 | 63.579 | 63.579 |
+| 0      | 14469   | 0.152 | 63.731 |
+| 1      | 9444    | 0.099 | 63.830 |
+| 2      | 8542    | 0.090 | 63.920 |
+| 4      | 7800    | 0.082 | 64.002 |
+| 3      | 7797    | 0.082 | 64.084 |
+| 5      | 7585    | 0.080 | 64.164 |
+| 6      | 7487    | 0.079 | 64.243 |
+| 7      | 7431    | 0.078 | 64.321 |
+| 8      | 7298    | 0.077 | 64.398 |
+| 9      | 7142    | 0.075 | 64.473 |
+| 10     | 7100    | 0.075 | 64.548 |
+| 11     | 6895    | 0.072 | 64.620 |
+| 12     | 6859    | 0.072 | 64.692 |
+| 13     | 6017    | 0.063 | 64.755 |
+| 14     | 4715    | 0.050 | 64.805 |
+| 15     | 4248    | 0.045 | 64.850 |
+| 16     | 3770    | 0.040 | 64.890 |
+| 23     | 2552    | 0.027 | 64.917 |
+| 17     | 2474    | 0.026 | 64.943 |
+| 21     | 2349    | 0.025 | 64.968 |
+| 19     | 2261    | 0.024 | 64.992 |
+| 24     | 2129    | 0.022 | 65.014 |
+| 20     | 2102    | 0.022 | 65.036 |
+| 27     | 1994    | 0.021 | 65.057 |
+| 26     | 1987    | 0.021 | 65.078 |
+| 29     | 1931    | 0.020 | 65.098 |
+| 30     | 1924    | 0.020 | 65.118 |
+| 28     | 1878    | 0.020 | 65.138 |
+| 32     | 1861    | 0.020 | 65.158 |
+| 34     | 1848    | 0.019 | 65.177 |
+| 33     | 1821    | 0.019 | 65.196 |
+| 36     | 1794    | 0.019 | 65.215 |
+| 37     | 1777    | 0.019 | 65.234 |
+| 38     | 1685    | 0.018 | 65.252 |
+| 39     | 1631    | 0.017 | 65.269 |
+| 42     | 1594    | 0.017 | 65.286 |
+| 69     | 1550    | 0.016 | 65.302 |
+| 43     | 1550    | 0.016 | 65.318 |
+| 41     | 1512    | 0.016 | 65.334 |
+| 48     | 1489    | 0.016 | 65.350 |
+| 45     | 1478    | 0.016 | 65.366 |
+| 46     | 1474    | 0.015 | 65.381 |
+| 50     | 1451    | 0.015 | 65.396 |
+| 44     | 1432    | 0.015 | 65.411 |
+| 51     | 1380    | 0.015 | 65.426 |
+| 57     | 1330    | 0.014 | 65.440 |
+| 56     | 1295    | 0.014 | 65.454 |
+| 52     | 1283    | 0.013 | 65.467 |
+| 67     | 1266    | 0.013 | 65.480 |
+
+### Observations
+
+- 464796 categories appear fewer than 10 times.
+- 383985 categories appear fewer than 5 times.
+- Top 1 category contributes around 65% of the data.
+- Top 50 categories contribute more than 65%.
+- Total unique categories = **530183**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 2 |
+| 1000-10000 | 70 |
+| 100-1000 | 2959 |
+| 10-100 | 62356 |
+| 5-10 | 80811 |
+| 3-5 | 100032 |
+| 1-3 | 283953 |
+
+![Frequency Distribution](images/freq_distri_AccountUpn.png)
+
+- Only AccountUpn appear on ~65% of the data
+
+![Contribution Distribution](images/skewedaccountupn.png)
+
+- This is Simply a drop in appearence as only first in top takes 65% appearence which looks like a peak and then immediate fall
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['AccountUpn', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['AccountUpn', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('AccountUpn')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+result['total_count']=result['FalsePositive']+result['BenignPositive']+result['TruePositive']
+result['FalsePositive_pct']=((result['FalsePositive']/result['total_count'])*100).round(3)
+result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*100).round(3)
+result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
+```
+#### Conditional Target Distribution (Target | AccountUpn)
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | AccountUpn)). It helps identify AccountUpn whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+- AccountUpn with more than 10,000 incidents were ranked by their BenignPositive percentage. Several AccountUpns exhibit a very high BenignPositive rate, suggesting a strong relationship between AccountUpn and the target variable.
+
+```python
+df=result[['AccountUpn','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+BenignPositive_df=df.sort_values(by=['BenignPositive_pct','total_count'],ascending=[False,False])
+BenignPositive_df.head(20)
+```
+| AccountUpn | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 0 | 14469 | 0.000 | **100.00** | 0.000 |
+| 673934 | 6049063 | 22.008 | 41.105 | 36.887 |
+
+##### FalsePositive
+- AccountUpn with more than 10,000 incidents were ranked by their FalsePositive percentage. Several AccountUpns exhibit a very high FalsePositive rate, suggesting a strong relationship between AccountUpn and the target variable.
+```python
+FalsePositive_df=df.sort_values(by=['FalsePositive_pct','total_count'],ascending=[False,False])
+FalsePositive_df.head(20)
+```
+
+| AccountUpn | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 673934 | 6049063 | 22.008 | 41.105 | 36.887 |
+| 0 | 14469 | 0.000 | **100.00** | 0.000 |
+
+##### TruePositive
+- AccountUpn with more than 10,000 incidents were ranked by their TruePositive percentage. Several AccountUpns exhibit a very high TruePositive rate, suggesting a strong relationship between AccountUpn and the target variable.
+```python
+TruePositive_df=df.sort_values(by=['TruePositive_pct','total_count'],ascending=[False,False])
+TruePositive_df.head(20)
+```
+| AccountUpn | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|-----------:|------------:|------------------:|-------------------:|-----------------:|
+| 673934 | 6049063 | 22.008 | 41.105 | 36.887 |
+| 0 | 14469 | 0.000 | **100.00** | 0.000 |
+
+#### Dominant Class Category
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+result['max_target_pct'] = result[target_cols].max(axis=1) / result['total_count'] * 100
+result['max_target_pct'].describe()
+plt.figure(figsize=(8,5))
+plt.hist(result['max_target_pct'], bins=30)
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of AccountUpns")
+plt.title("Distribution of Dominant Target Percentage")
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class_accountupn.png)
+
+#### Purity Statistics
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
+100% Pure : 505799
+>99% Pure : 505837
+>95% Pure : 506362
+<80% Pure : 13751
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+result['entropy'] = -(p * np.log2(p.replace(0, np.nan))).sum(axis=1)
+result[['AccountUpn','entropy']].head()
+plt.figure(figsize=(8,5))
+plt.hist(result['entropy'], bins=30)
+plt.xlabel("Entropy")
+plt.ylabel("Number of AccountUpns")
+plt.title("Entropy Distribution Across AccountUpns")
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist_accountupn.png)
+
+#### Target Distribtution for top 20 AccountUpns
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('AccountUpn')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 AccountUpns")
+plt.show()
+```
+
+![Target Distribution For top 20 AccountUpns](images/tar_dist_top_20_accountupn.png)
+
+#### Dominant Class Count
+```python
+result['majority_class'].value_counts().plot.bar()
+plt.ylabel("Number of AccountUpns")
+plt.title("Dominant IncidentGrade per AccountUpn")
+plt.show()
+```
+![Dominant Class Count](images/dom_class_count_accountupn.png)
+
+### Relationship with other numeric Cols
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+    corr_list.append(chunk[numeric_cols].corr()['AccountUpn'])
+
+AccountUpn_corr = pd.concat(corr_list, axis=1).mean(axis=1)
+AccountUpn_corr = AccountUpn_corr.drop('AccountUpn').sort_values(key=abs, ascending=False)
+
+print(AccountUpn_corr)
+```
+| Feature | Correlation |
+|---|---:|
+| AccountName | 0.726696 |
+| IpAddress | -0.382707 |
+| FileName | -0.241897 |
+| FolderPath | -0.225342 |
+| CountryCode | -0.210643 |
+| Sha256 | -0.202853 |
+| DeviceName | -0.197297 |
+| Url | -0.193774 |
+| State | -0.192299 |
+| City | -0.192101 |
+| DeviceId | -0.138394 |
+| ApplicationName | -0.110673 |
+| ApplicationId | -0.109102 |
+| OSVersion | -0.104210 |
+| OSFamily | -0.104134 |
+| AlertTitle | -0.076641 |
+| RegistryKey | -0.030615 |
+| OrgId | -0.026347 |
+| RegistryValueData | -0.016838 |
+| RegistryValueName | -0.015232 |
+| DetectorId | 0.014795 |
+| IncidentId | -0.002896 |
+| EmailClusterId | NaN |
+
+- Observation: The features show mixed linear correlations with the target. AccountName (0.727) has the strongest positive correlation, while IpAddress (-0.383) has the strongest negative correlation, followed by FileName (-0.242) and FolderPath (-0.225). Most remaining features show weak correlations. Since these are primarily high-cardinality identifiers or categorical variables, Pearson correlation should be treated as a descriptive measure only.
+

@@ -7,6 +7,8 @@
 - Make a entropy for each unique for a feature to help model analyse more better
 - There are only Two OSversion in 99% of data ('66','0') out of which much more than 50% is OSversion '66' we can fill other version as 'Others' or '-1'.
 - OSVersion and OSFamily are almost completely related (corr>0.99) hence putting boot will be exaggeration and won't help much hence OSFamily can be removed from further modelling.
+- AccountUpn: It’s heavily skewed — 2 categories make up ~65–70% of the data, and only 70+2 other categories have enough occurrences to be meaningful. I’d keep those 72 categories and group the rest into OTHER. (To be frank I'd only keep 20)
+- AccountName as a column is of extremely high cardinality not much suitable for EDA but is correlated with AccountUpn almost 80% data preprocessing of it must be handled with care.
 
 
 
