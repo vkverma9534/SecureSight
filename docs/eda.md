@@ -1569,7 +1569,7 @@ freq.columns = ['AccountUpn', 'count','count_pct(%)','cumsum_pct']
 | 3-5 | 100032 |
 | 1-3 | 283953 |
 
-![Frequency Distribution](images/freq_distri_AccountUpn.png)
+![Frequency Distribution](images/freq_distri_accountupn.png)
 
 - Only AccountUpn appear on ~65% of the data
 
