@@ -1871,11 +1871,11 @@ freq.columns = ['AccountName', 'count','count_pct(%)','cumsum_pct']
 | 3-5 | 66207 |
 | 1-3 | 214117 |
 
-![Frequency Distribution](images/freq_distri_AccountName.png)
+![Frequency Distribution](images/freq_distri_accountname.png)
 
 - Only 1 AccountName appear on ~75% of the data
 
-![Contribution Distribution](images/skewedAccountName.png)
+![Contribution Distribution](images/skewedaccountname.png)
 
 - This is Simply a drop in appearence as only first in top takes 75% appearence which looks like a peak and then immediate fall
 
@@ -1963,7 +1963,7 @@ plt.title("Distribution of Dominant Target Percentage")
 plt.show()
 ```
 
-![Dominant Class Category](images/dom_class_AccountName.png)
+![Dominant Class Category](images/dom_class_accountname.png)
 
 #### Purity Statistics
 ```python
@@ -1991,7 +1991,7 @@ plt.title("Entropy Distribution Across AccountNames")
 plt.show()
 ```
 
-![Entropy Distribution](images/entropy_dist_AccountName.png)
+![Entropy Distribution](images/entropy_dist_accountname.png)
 
 #### Target Distribtution for top 20 AccountNames
 ```python
@@ -2012,7 +2012,7 @@ plt.title("Target Distribution for Top 20 AccountNames")
 plt.show()
 ```
 
-![Target Distribution For top 20 AccountNames](images/tar_dist_top_20_AccountName.png)
+![Target Distribution For top 20 AccountNames](images/tar_dist_top_20_accountname.png)
 
 #### Dominant Class Count
 ```python
@@ -2021,7 +2021,7 @@ plt.ylabel("Number of AccountNames")
 plt.title("Dominant IncidentGrade per AccountName")
 plt.show()
 ```
-![Dominant Class Count](images/dom_class_count_AccountName.png)
+![Dominant Class Count](images/dom_class_count_accountname.png)
 
 ### Relationship with other numeric Cols
 ```python
@@ -2175,7 +2175,7 @@ freq.columns = ['Sha256', 'count','count_pct(%)','cumsum_pct']
 | 3-5 | 16185 |
 | 1-3 | 74575 |
 
-![Frequency Distribution](images/freq_distri_Sha256.png)
+![Frequency Distribution](images/freq_distri_sha256.png)
 
 - Nearly 1 Sha256s appear on ~92% of the data
 
