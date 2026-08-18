@@ -2375,3 +2375,308 @@ print(Sha256_corr)
 | EmailClusterId | NaN |
 
 - Observation: The features exhibit mixed linear correlations with the target. FileName (0.864) shows the strongest positive correlation, followed by FolderPath (0.751). AccountUpn (-0.203) has the strongest negative correlation, followed by AccountName (-0.155) and IpAddress (-0.149). Most remaining features show weak correlations close to zero. Since these features are largely categorical or high-cardinality identifiers, Pearson correlation should be interpreted as a descriptive measure only, rather than evidence of a meaningful relationship or causation.
+
+
+## RegistryKey
+
+- No need for standardization.
+- No missing values.
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+    s = chunk_dict[i]["RegistryKey"]
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+    print(non_numeric.unique())
+```
+
+### Cardinality
+
+- Cardinality is not that high considering the dataset size.
+- Number of unique values varies highly across chunks each chunks appears to be containing ~300 uniques values of RegistryKey 3 times lower than total nuniques.
+- Taking the union across all chunks gives **1341 unique RegistryKey values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+    print(chunk_dict[i]["RegistryKey"].nunique())
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+    pd.concat([chunk_dict[i]['RegistryKey'] for i in chunk_dict])
+    .value_counts(dropna=False)
+    .rename('count')
+    .reset_index()
+)
+freq=freq.sort_values('count',ascending=False)
+freq['count_pct(%)']=((freq['count']/9516837)*100).round(3)
+freq['cumsum_pct']=freq['count_pct(%)'].cumsum()
+freq.columns = ['RegistryKey', 'count','count_pct(%)','cumsum_pct']
+```
+
+#### Top 50 RegistryKeys
+
+| RegistryKey | count | count_pct(%) | cumsum_pct |
+|---:|---:|---:|---:|
+| 0 | 1631 | 9496737 | 99.789 |
+| 1 | 0 | 11076 | 0.116 | 99.905 |
+| 2 | 1 | 245 | 0.003 | 99.908 |
+| 3 | 3 | 235 | 0.002 | 99.910 |
+| 4 | 6 | 141 | 0.001 | 99.911 |
+| 5 | 4 | 136 | 0.001 | 99.912 |
+| 6 | 5 | 131 | 0.001 | 99.913 |
+| 7 | 8 | 118 | 0.001 | 99.914 |
+| 8 | 7 | 98 | 0.001 | 99.915 |
+| 9 | 12 | 75 | 0.001 | 99.916 |
+| 10 | 9 | 70 | 0.001 | 99.917 |
+| 11 | 11 | 66 | 0.001 | 99.918 |
+| 12 | 10 | 66 | 0.001 | 99.919 |
+| 13 | 15 | 58 | 0.001 | 99.920 |
+| 14 | 2 | 53 | 0.001 | 99.921 |
+| 15 | 13 | 44 | 0.000 | 99.921 |
+| 16 | 16 | 40 | 0.000 | 99.921 |
+| 18 | 17 | 36 | 0.000 | 99.921 |
+| 17 | 24 | 36 | 0.000 | 99.921 |
+| 20 | 25 | 34 | 0.000 | 99.921 |
+| 19 | 36 | 34 | 0.000 | 99.921 |
+| 22 | 20 | 32 | 0.000 | 99.921 |
+| 21 | 34 | 32 | 0.000 | 99.921 |
+| 23 | 19 | 31 | 0.000 | 99.921 |
+| 24 | 35 | 29 | 0.000 | 99.921 |
+| 26 | 29 | 28 | 0.000 | 99.921 |
+| 25 | 37 | 28 | 0.000 | 99.921 |
+| 27 | 28 | 28 | 0.000 | 99.921 |
+| 28 | 62 | 27 | 0.000 | 99.921 |
+| 30 | 18 | 26 | 0.000 | 99.921 |
+| 29 | 27 | 26 | 0.000 | 99.921 |
+| 32 | 30 | 24 | 0.000 | 99.921 |
+| 31 | 45 | 24 | 0.000 | 99.921 |
+| 34 | 26 | 23 | 0.000 | 99.921 |
+| 33 | 61 | 23 | 0.000 | 99.921 |
+| 35 | 23 | 22 | 0.000 | 99.921 |
+| 39 | 33 | 22 | 0.000 | 99.921 |
+| 37 | 42 | 22 | 0.000 | 99.921 |
+| 38 | 46 | 22 | 0.000 | 99.921 |
+| 36 | 63 | 22 | 0.000 | 99.921 |
+| 45 | 75 | 21 | 0.000 | 99.921 |
+| 44 | 68 | 21 | 0.000 | 99.921 |
+| 41 | 77 | 21 | 0.000 | 99.921 |
+| 43 | 78 | 21 | 0.000 | 99.921 |
+| 42 | 74 | 21 | 0.000 | 99.921 |
+| 40 | 79 | 21 | 0.000 | 99.921 |
+| 48 | 73 | 21 | 0.000 | 99.921 |
+| 47 | 76 | 21 | 0.000 | 99.921 |
+| 49 | 72 | 21 | 0.000 | 99.921 |
+| 46 | 71 | 21 | 0.000 | 99.921 |
+
+### Observations
+
+- 99831 categories appear fewer than 10 times.
+- 90758 categories appear fewer than 5 times.
+- Top 1 category contribute around 92% of the data.
+- Top 50 categories contribute more than 94%.
+- Total unique categories = **106416**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 6 |
+| 1000-10000 | 52 |
+| 100-1000 | 553 |
+| 10-100 | 5974 |
+| 5-10 | 9073 |
+| 3-5 | 16185 |
+| 1-3 | 74575 |
+
+![Frequency Distribution](images/freq_distri_RegistryKey.png)
+
+- Nearly 1 RegistryKeys appear on ~99% of the data
+
+![Contribution Distribution](images/skewedRegistryKey.png)
+
+- The RegistryKey feature is highly right-skewed. Approximately 99.8% of the observations are concentrated at a single value (RegistryKey = 0), while the remaining values occur very infrequently. This indicates a strong class imbalance and suggests that RegistryKey has very low variability for the majority of records. For modeling, this feature may have limited predictive value unless the rare RegistryKey values carry meaningful information.
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['RegistryKey', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['RegistryKey', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('RegistryKey')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+result['total_count']=result['FalsePositive']+result['BenignPositive']+result['TruePositive']
+result['FalsePositive_pct']=((result['FalsePositive']/result['total_count'])*100).round(3)
+result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*100).round(3)
+result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
+```
+#### Conditional Target Distribution (Target | RegistryKey)
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | RegistryKey)). It helps identify RegistryKey whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+- RegistryKey with more than 10,000 incidents were ranked by their BenignPositive percentage. Several RegistryKeys exhibit a very high BenignPositive rate, suggesting a strong relationship between RegistryKey and the target variable.
+
+```python
+df=result[['RegistryKey','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+BenignPositive_df=df.sort_values(by=['BenignPositive_pct','total_count'],ascending=[False,False])
+BenignPositive_df.head(20)
+```
+| RegistryKey | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---:|---:|---:|---:|---:|
+| 1631 | 9445398 | 21.366 | 43.491 | 35.143 |
+| 0 | 11076 | 99.639 | 0.361 | 0.000 |
+
+##### FalsePositive
+- RegistryKey with more than 10,000 incidents were ranked by their FalsePositive percentage. Several RegistryKeys exhibit a very high FalsePositive rate, suggesting a strong relationship between RegistryKey and the target variable.
+```python
+FalsePositive_df=df.sort_values(by=['FalsePositive_pct','total_count'],ascending=[False,False])
+FalsePositive_df.head(20)
+```
+
+
+| RegistryKey | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---:|---:|---:|---:|---:|
+| 0 | 11076 | 99.639 | 0.361 | 0.000 |
+| 1631 | 9445398 | 21.366 | 43.491 | 35.143 |
+
+##### TruePositive
+- RegistryKey with more than 10,000 incidents were ranked by their TruePositive percentage. Several RegistryKeys exhibit a very high TruePositive rate, suggesting a strong relationship between RegistryKey and the target variable.
+```python
+TruePositive_df=df.sort_values(by=['TruePositive_pct','total_count'],ascending=[False,False])
+TruePositive_df.head(20)
+```
+| RegistryKey | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---:|---:|---:|---:|---:|
+| 1631 | 9445398 | 21.366 | 43.491 | 35.143 |
+| 0 | 11076 | 99.639 | 0.361 | 0.000 |
+
+- RegistryKey = 1631 is associated with substantially higher BenignPositive (43.49%) and TruePositive (35.14%) rates, while RegistryKey = 0 is overwhelmingly associated with FalsePositive (99.64%) cases. This indicates that RegistryKey is a strong discriminator between outcomes.
+#### Dominant Class Category
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+result['max_target_pct'] = result[target_cols].max(axis=1) / result['total_count'] * 100
+result['max_target_pct'].describe()
+plt.figure(figsize=(8,5))
+plt.hist(result['max_target_pct'], bins=30)
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of RegistryKeys")
+plt.title("Distribution of Dominant Target Percentage")
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class_RegistryKey.png)
+
+#### Purity Statistics
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
+100% Pure : 1226
+>99% Pure : 1227
+>95% Pure : 1231
+<80% Pure : 84
+
+- The feature is overwhelmingly concentrated in the 100% Pure, >99% Pure, and >95% Pure categories, with ~1.2K observations each.
+The <80% Pure category is rare, with only 84 observations, indicating a highly imbalanced distribution.
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+result['entropy'] = -(p * np.log2(p.replace(0, np.nan))).sum(axis=1)
+result[['RegistryKey','entropy']].head()
+plt.figure(figsize=(8,5))
+plt.hist(result['entropy'], bins=30)
+plt.xlabel("Entropy")
+plt.ylabel("Number of RegistryKeys")
+plt.title("Entropy Distribution Across RegistryKeys")
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist_RegistryKey.png)
+
+#### Target Distribtution for top 20 RegistryKeys
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('RegistryKey')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 RegistryKeys")
+plt.show()
+```
+
+![Target Distribution For top 20 RegistryKeys](images/tar_dist_top_20_RegistryKey.png)
+
+#### Dominant Class Count
+```python
+result['majority_class'].value_counts().plot.bar()
+plt.ylabel("Number of RegistryKeys")
+plt.title("Dominant IncidentGrade per RegistryKey")
+plt.show()
+```
+![Dominant Class Count](images/dom_class_count_RegistryKey.png)
+
+### Relationship with other numeric Cols
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+    corr_list.append(chunk[numeric_cols].corr()['RegistryKey'])
+
+RegistryKey_corr = pd.concat(corr_list, axis=1).mean(axis=1)
+RegistryKey_corr = RegistryKey_corr.drop('RegistryKey').sort_values(key=abs, ascending=False)
+
+print(RegistryKey_corr)
+```
+| RegistryValueData | 0.394382 |
+| RegistryValueName | 0.378767 |
+| AccountUpn | -0.030615 |
+| AccountName | -0.023412 |
+| IpAddress | -0.022473 |
+| DetectorId | -0.015672 |
+| IncidentId | 0.014883 |
+| FileName | -0.014204 |
+| FolderPath | -0.013232 |
+| CountryCode | -0.012369 |
+| Sha256 | -0.011912 |
+| DeviceName | -0.011586 |
+| Url | -0.011378 |
+| State | -0.011292 |
+| City | -0.011280 |
+| DeviceId | -0.008127 |
+| AlertTitle | 0.006884 |
+| ApplicationName | -0.006499 |
+| ApplicationId | -0.006407 |
+| OSVersion | -0.006119 |
+| OSFamily | -0.006115 |
+| OrgId | -0.002926 |
+| EmailClusterId | NaN |
+
+- Observation: The features exhibit mixed linear correlations with the target feature, RegistryKey. RegistryValueData (0.394) shows the strongest positive correlation, followed by RegistryValueName (0.379). AccountUpn (-0.031) has the strongest negative correlation, followed by AccountName (-0.023) and IpAddress (-0.022). Most remaining features show very weak correlations close to zero. Since these features are largely categorical or high-cardinality identifiers, Pearson correlation should be interpreted as a descriptive measure only, rather than evidence of a meaningful relationship or causation.
