@@ -2655,6 +2655,8 @@ RegistryKey_corr = RegistryKey_corr.drop('RegistryKey').sort_values(key=abs, asc
 
 print(RegistryKey_corr)
 ```
+| Feature | correlation |
+|---|---:|
 | RegistryValueData | 0.394382 |
 | RegistryValueName | 0.378767 |
 | AccountUpn | -0.030615 |
@@ -2680,3 +2682,305 @@ print(RegistryKey_corr)
 | EmailClusterId | NaN |
 
 - Observation: The features exhibit mixed linear correlations with the target feature, RegistryKey. RegistryValueData (0.394) shows the strongest positive correlation, followed by RegistryValueName (0.379). AccountUpn (-0.031) has the strongest negative correlation, followed by AccountName (-0.023) and IpAddress (-0.022). Most remaining features show very weak correlations close to zero. Since these features are largely categorical or high-cardinality identifiers, Pearson correlation should be interpreted as a descriptive measure only, rather than evidence of a meaningful relationship or causation.
+
+## Url
+
+- No need for standardization.
+- No missing values.
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+    s = chunk_dict[i]["Url"]
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+    print(non_numeric.unique())
+```
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+- Number of unique values varies highly across chunks each chunks appears to be containing ~20000 uniques values of Url 5 times lower than total nuniques.
+- Taking the union across all chunks gives **123252 unique Url values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+    print(chunk_dict[i]["Url"].nunique())
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+    pd.concat([chunk_dict[i]['Url'] for i in chunk_dict])
+    .value_counts(dropna=False)
+    .rename('count')
+    .reset_index()
+)
+freq=freq.sort_values('count',ascending=False)
+freq['count_pct(%)']=((freq['count']/9516837)*100).round(3)
+freq['cumsum_pct']=freq['count_pct(%)'].cumsum()
+freq.columns = ['Url', 'count','count_pct(%)','cumsum_pct']
+```
+
+#### Top 50 Urls
+
+| Url | count | count_pct(%) | cumsum_pct |
+|---:|---:|---:|---:|
+| 0 | 160396 | 8831557 | 92.799 |
+| 1 | 0 | 8198 | 0.086 |
+| 2 | 1 | 6607 | 0.069 |
+| 3 | 2 | 5264 | 0.055 |
+| 4 | 6 | 4238 | 0.045 |
+| 5 | 3 | 3805 | 0.040 |
+| 6 | 4 | 3465 | 0.036 |
+| 7 | 5 | 3416 | 0.036 |
+| 8 | 7 | 2335 | 0.025 |
+| 9 | 9 | 2181 | 0.023 |
+| 10 | 11 | 2164 | 0.023 |
+| 11 | 10 | 2054 | 0.022 |
+| 12 | 8 | 2031 | 0.021 |
+| 13 | 12 | 1957 | 0.021 |
+| 14 | 14 | 1928 | 0.020 |
+| 15 | 16 | 1877 | 0.020 |
+| 16 | 13 | 1817 | 0.019 |
+| 17 | 17 | 1681 | 0.018 |
+| 18 | 15 | 1659 | 0.017 |
+| 19 | 18 | 1571 | 0.017 |
+| 20 | 19 | 1548 | 0.016 |
+| 21 | 25 | 1518 | 0.016 |
+| 22 | 20 | 1498 | 0.016 |
+| 23 | 23 | 1438 | 0.015 |
+| 24 | 26 | 1403 | 0.015 |
+| 25 | 21 | 1387 | 0.015 |
+| 26 | 24 | 1384 | 0.015 |
+| 27 | 27 | 1358 | 0.014 |
+| 28 | 33 | 1340 | 0.014 |
+| 29 | 29 | 1338 | 0.014 |
+| 30 | 34 | 1333 | 0.014 |
+| 31 | 35 | 1333 | 0.014 |
+| 32 | 22 | 1330 | 0.014 |
+| 33 | 31 | 1329 | 0.014 |
+| 34 | 32 | 1322 | 0.014 |
+| 35 | 30 | 1304 | 0.014 |
+| 36 | 36 | 1296 | 0.014 |
+| 37 | 28 | 1257 | 0.013 |
+| 38 | 37 | 1245 | 0.013 |
+| 39 | 39 | 1235 | 0.013 |
+| 40 | 41 | 1173 | 0.012 |
+| 41 | 38 | 1169 | 0.012 |
+| 42 | 43 | 1117 | 0.012 |
+| 43 | 42 | 1108 | 0.012 |
+| 44 | 46 | 1077 | 0.011 |
+| 45 | 48 | 1071 | 0.011 |
+| 46 | 50 | 1058 | 0.011 |
+| 47 | 44 | 1055 | 0.011 |
+| 48 | 45 | 1052 | 0.011 |
+| 49 | 47 | 1038 | 0.011 |
+
+### Observations
+
+- 118084 categories appear fewer than 10 times.
+- 111812 categories appear fewer than 5 times.
+- Top 1 category contribute around 92% of the data.
+- Top 50 categories contribute more than 93.8%.
+- Total unique categories = **123252**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 1 |
+| 1000-10000 | 52 |
+| 100-1000 | 930 |
+| 10-100 | 4185 |
+| 5-10 | 6272 |
+| 3-5 | 15699 |
+| 1-3 | 96113 |
+
+![Frequency Distribution](images/freq_distri_Url.png)
+
+- Nearly 1 Urls appear on ~92% of the data
+
+![Contribution Distribution](images/skewedUrl.png)
+
+- The Url feature is highly right-skewed, with approximately 92.8% of observations concentrated at Url = 160396. The remaining values occur very infrequently, indicating low variability and a long tail of rare values. Its predictive value should be evaluated based on whether these rare values are associated with the target classes.
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['Url', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['Url', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('Url')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+result['total_count']=result['FalsePositive']+result['BenignPositive']+result['TruePositive']
+result['FalsePositive_pct']=((result['FalsePositive']/result['total_count'])*100).round(3)
+result['BenignPositive_pct']=((result['BenignPositive']/result['total_count'])*100).round(3)
+result['TruePositive_pct']=((result['TruePositive']/result['total_count'])*100).round(3)
+```
+#### Conditional Target Distribution (Target | Url)
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | Url)). It helps identify Url whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+- Url with more than 10,000 incidents were ranked by their BenignPositive percentage. Several Urls exhibit a very high BenignPositive rate, suggesting a strong relationship between Url and the target variable.
+
+```python
+df=result[['Url','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+BenignPositive_df=df.sort_values(by=['BenignPositive_pct','total_count'],ascending=[False,False])
+BenignPositive_df.head(20)
+```
+| Url | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---:|---:|---:|---:|---:|
+| 160396 | 8780218 | 22.019 | 42.078 | 35.904 |
+
+##### FalsePositive
+- Url with more than 10,000 incidents were ranked by their FalsePositive percentage. Several Urls exhibit a very high FalsePositive rate, suggesting a strong relationship between Url and the target variable.
+```python
+FalsePositive_df=df.sort_values(by=['FalsePositive_pct','total_count'],ascending=[False,False])
+FalsePositive_df.head(20)
+```
+
+
+| Url | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---:|---:|---:|---:|---:|
+| 160396 | 8780218 | 22.019 | 42.078 | 35.904 |
+
+##### TruePositive
+- Url with more than 10,000 incidents were ranked by their TruePositive percentage. Several Urls exhibit a very high TruePositive rate, suggesting a strong relationship between Url and the target variable.
+```python
+TruePositive_df=df.sort_values(by=['TruePositive_pct','total_count'],ascending=[False,False])
+TruePositive_df.head(20)
+```
+| Url | total_count | FalsePositive_pct | BenignPositive_pct | TruePositive_pct |
+|---:|---:|---:|---:|---:|
+| 160396 | 8780218 | 22.019 | 42.078 | 35.904 |
+
+- Url = 160396 shows 42.08% BenignPositive, 35.90% TruePositive, and 22.02% FalsePositive cases. This suggests that Url may have meaningful predictive value across outcomes.
+#### Dominant Class Category
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+result['max_target_pct'] = result[target_cols].max(axis=1) / result['total_count'] * 100
+result['max_target_pct'].describe()
+plt.figure(figsize=(8,5))
+plt.hist(result['max_target_pct'], bins=30)
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of Urls")
+plt.title("Distribution of Dominant Target Percentage")
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class_Url.png)
+
+#### Purity Statistics
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
+100% Pure : 119136
+>99% Pure : 119176
+>95% Pure : 119438
+<80% Pure : 2976
+
+- The feature is concentrated in the 100% Pure, >99% Pure, and >95% Pure categories, with approximately 119K observations each. The <80% Pure category has 2,976 observations, making it substantially less frequent but not extremely rare.
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+result['entropy'] = -(p * np.log2(p.replace(0, np.nan))).sum(axis=1)
+result[['Url','entropy']].head()
+plt.figure(figsize=(8,5))
+plt.hist(result['entropy'], bins=30)
+plt.xlabel("Entropy")
+plt.ylabel("Number of Urls")
+plt.title("Entropy Distribution Across Urls")
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist_Url.png)
+
+#### Target Distribtution for top 20 Urls
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('Url')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 Urls")
+plt.show()
+```
+
+![Target Distribution For top 20 Urls](images/tar_dist_top_20_Url.png)
+
+#### Dominant Class Count
+```python
+result['majority_class'].value_counts().plot.bar()
+plt.ylabel("Number of Urls")
+plt.title("Dominant IncidentGrade per Url")
+plt.show()
+```
+![Dominant Class Count](images/dom_class_count_Url.png)
+
+### Relationship with other numeric Cols
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+    corr_list.append(chunk[numeric_cols].corr()['Url'])
+
+Url_corr = pd.concat(corr_list, axis=1).mean(axis=1)
+Url_corr = Url_corr.drop('Url').sort_values(key=abs, ascending=False)
+
+print(Url_corr)
+```
+| Feature | correlation |
+|---|---:|
+| AccountUpn | -0.193774 |
+| AccountName | -0.148183 |
+| IpAddress | -0.142238 |
+| FileName | -0.089904 |
+| FolderPath | -0.083752 |
+| CountryCode | -0.078288 |
+| Sha256 | -0.075364 |
+| DeviceName | -0.073328 |
+| State | -0.071471 |
+| City | -0.071397 |
+| AlertTitle | 0.060791 |
+| DeviceId | -0.051436 |
+| ApplicationName | -0.041133 |
+| DetectorId | 0.040912 |
+| ApplicationId | -0.040549 |
+| OSVersion | -0.038731 |
+| OSFamily | -0.038703 |
+| IncidentId | -0.022674 |
+| OrgId | 0.011563 |
+| RegistryKey | -0.011378 |
+| RegistryValueData | -0.006258 |
+| RegistryValueName | -0.005661 |
+| EmailClusterId | NaN |
+
+- Observation: The correlation analysis shows that most features have weak correlations with the target variable. The strongest negative correlations are observed for AccountUpn (-0.194), AccountName (-0.148), and IpAddress (-0.142), while the strongest positive correlations are AlertTitle (0.061) and DetectorId (0.041). Overall, the low correlation values suggest that no single feature has a strong linear relationship with the target.
