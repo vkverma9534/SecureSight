@@ -2473,21 +2473,21 @@ freq.columns = ['RegistryKey', 'count','count_pct(%)','cumsum_pct']
 
 ### Observations
 
-- 99831 categories appear fewer than 10 times.
-- 90758 categories appear fewer than 5 times.
-- Top 1 category contribute around 92% of the data.
-- Top 50 categories contribute more than 94%.
-- Total unique categories = **106416**.
+- 1176 categories appear fewer than 10 times.
+- 1092 categories appear fewer than 5 times.
+- Top 1 category contribute around 99% of the data.
+- Top 50 categories contribute more than 99.9%.
+- Total unique categories = **1341**.
 
 | Appearance | Categories |
 |-----------:|-----------:|
-| 10000+ | 6 |
-| 1000-10000 | 52 |
-| 100-1000 | 553 |
-| 10-100 | 5974 |
-| 5-10 | 9073 |
-| 3-5 | 16185 |
-| 1-3 | 74575 |
+| 10000+ | 2 |
+| 1000-10000 | 0 |
+| 100-1000 | 6 |
+| 10-100 | 157 |
+| 5-10 | 84 |
+| 3-5 | 198 |
+| 1-3 | 894 |
 
 ![Frequency Distribution](images/freq_distri_RegistryKey.png)
 
