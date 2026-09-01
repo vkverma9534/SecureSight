@@ -2984,3 +2984,43 @@ print(Url_corr)
 | EmailClusterId | NaN |
 
 - Observation: The correlation analysis shows that most features have weak correlations with the target variable. The strongest negative correlations are observed for AccountUpn (-0.194), AccountName (-0.148), and IpAddress (-0.142), while the strongest positive correlations are AlertTitle (0.061) and DetectorId (0.041). Overall, the low correlation values suggest that no single feature has a strong linear relationship with the target.
+
+## CountryCode
+
+- No need for standardization.
+- No missing values.
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+    s = chunk_dict[i]["CountryCode"]
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+    print(non_numeric.unique())
+```
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+- Number of unique values varies slightly across chunks each chunks appears to be containing ~160 uniques values of CountryCode.
+- Taking the union across all chunks gives **236 unique CountryCode values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+    print(chunk_dict[i]["CountryCode"].nunique())
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+    pd.concat([chunk_dict[i]['CountryCode'] for i in chunk_dict])
+    .value_counts(dropna=False)
+    .rename('count')
+    .reset_index()
+)
+freq=freq.sort_values('count',ascending=False)
+freq['count_pct(%)']=((freq['count']/9516837)*100).round(3)
+freq['cumsum_pct']=freq['count_pct(%)'].cumsum()
+freq.columns = ['CountryCode', 'count','count_pct(%)','cumsum_pct']
+```
+
