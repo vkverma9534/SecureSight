@@ -2985,7 +2985,7 @@ print(Url_corr)
 
 - Observation: The correlation analysis shows that most features have weak correlations with the target variable. The strongest negative correlations are observed for AccountUpn (-0.194), AccountName (-0.148), and IpAddress (-0.142), while the strongest positive correlations are AlertTitle (0.061) and DetectorId (0.041). Overall, the low correlation values suggest that no single feature has a strong linear relationship with the target.
 
-## CountryCode
+## IncidentId
 
 - No need for standardization.
 - No missing values.
@@ -2993,7 +2993,7 @@ print(Url_corr)
 
 ```python
 for i in range(len(chunk_dict)):
-    s = chunk_dict[i]["CountryCode"]
+    s = chunk_dict[i]["IncidentId"]
     non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
     print(non_numeric.unique())
 ```
@@ -3001,26 +3001,708 @@ for i in range(len(chunk_dict)):
 ### Cardinality
 
 - Cardinality is very high considering the dataset size.
-- Number of unique values varies slightly across chunks each chunks appears to be containing ~160 uniques values of CountryCode.
-- Taking the union across all chunks gives **236 unique CountryCode values** in the training data.
+- Number of unique values varies slightly across chunks.
+- Taking the union across all chunks gives **466151 unique IncidentId values** in the training data.
 
 ```python
 for i in range(len(chunk_dict)):
-    print(chunk_dict[i]["CountryCode"].nunique())
+    print(chunk_dict[i]["IncidentId"].nunique())
 ```
 
 ### Frequency Distribution
 
 ```python
 freq = (
-    pd.concat([chunk_dict[i]['CountryCode'] for i in chunk_dict])
+    pd.concat([chunk_dict[i]['IncidentId'] for i in chunk_dict])
     .value_counts(dropna=False)
     .rename('count')
     .reset_index()
 )
-freq=freq.sort_values('count',ascending=False)
-freq['count_pct(%)']=((freq['count']/9516837)*100).round(3)
-freq['cumsum_pct']=freq['count_pct(%)'].cumsum()
-freq.columns = ['CountryCode', 'count','count_pct(%)','cumsum_pct']
+
+freq.columns = ['IncidentId', 'count']
+
+freq['count_pct'] = (
+    (freq['count'] / total_valid_rows) * 100
+).round(2).astype(str) + '%'
 ```
 
+#### Top 20 IncidentIds
+
+| IncidentId | Count | Count (%) |
+|------:|------:|------:|
+| 0 | 27645 | 0.29% |
+| 2 | 20525 | 0.22% |
+| 7 | 12252 | 0.13% |
+| 9 | 11656 | 0.12% |
+| 14 | 10228 | 0.11% |
+| 17 | 10194 | 0.11% |
+| 20 | 10126 | 0.11% |
+| 21 | 10116 | 0.11% |
+| 26 | 10047 | 0.11% |
+| 24 | 10042 | 0.11% |
+| 29 | 10037 | 0.11% |
+| 27 | 10037 | 0.11% |
+| 31 | 10035 | 0.11% |
+| 34 | 10031 | 0.11% |
+| 35 | 10030 | 0.11% |
+| 32 | 10028 | 0.11% |
+| 33 | 10027 | 0.11% |
+| 39 | 10022 | 0.11% |
+| 30 | 10020 | 0.11% |
+| 40 | 10019 | 0.11% |
+
+### Observations
+
+- 47337 categories appear fewer than 3 times.
+- 211317 categories appear fewer than 5 times.
+- 320305 categories appear fewer than 10 times.
+- The frequency distribution is highly long-tailed, with a very large number of IncidentIds occurring only a few times.
+- The most frequent IncidentId contributes only around 0.29% of the data.
+- Total unique categories = **466151**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 68 |
+| 1000-10000 | 562 |
+| 100-1000 | 8425 |
+| 10-100 | 136791 |
+| 5-10 | 108988 |
+| 3-5 | 163980 |
+| 1-3 | 47337 |
+
+![Frequency Distribution](images/freq_distri_incident_id.png)
+
+![Contribution Distribution](images/contribution_incident_id.png)
+
+- The distribution is highly spread across a very large number of IncidentIds, with no small group of categories dominating the dataset.
+
+![Contribution Distribution](images/skewed_incident_id.png)
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the long-tail nature of the data.
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['IncidentId', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['IncidentId', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('IncidentId')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+
+result['total_count'] = (
+    result['FalsePositive']
+    + result['BenignPositive']
+    + result['TruePositive']
+)
+
+result['FalsePositive_pct'] = (
+    (result['FalsePositive'] / result['total_count']) * 100
+).round(3)
+
+result['BenignPositive_pct'] = (
+    (result['BenignPositive'] / result['total_count']) * 100
+).round(3)
+
+result['TruePositive_pct'] = (
+    (result['TruePositive'] / result['total_count']) * 100
+).round(3)
+```
+
+#### Conditional Target Distribution (Target | IncidentId)
+
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | IncidentId)). It helps identify IncidentIds whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+
+- IncidentIds with more than 10,000 incidents were ranked by their BenignPositive percentage. Several IncidentIds exhibit a very high BenignPositive rate, suggesting a strong relationship between IncidentId and the target variable.
+
+```python
+df=result[['IncidentId','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+
+BenignPositive_df=df.sort_values('BenignPositive_pct',ascending=False)
+
+BenignPositive_df.head(20)
+```
+
+| IncidentId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 17 | 10194 | 0.000 | **100.000** | 0.000 |
+| 45 | 10012 | 0.000 | **100.000** | 0.000 |
+| 53 | 10011 | 0.000 | **100.000** | 0.000 |
+| 2 | 20525 | 0.000 | 99.937 | 0.063 |
+| 7 | 12252 | 42.450 | 57.329 | 0.220 |
+| 27 | 10037 | 0.070 | 0.319 | 99.611 |
+| 24 | 10042 | 0.219 | 0.209 | 99.572 |
+| 39 | 10021 | 0.080 | 0.170 | 99.751 |
+| 36 | 10012 | 0.000 | 0.160 | 99.840 |
+| 44 | 10010 | 0.000 | 0.110 | 99.890 |
+| 62 | 10008 | 0.000 | 0.080 | 99.920 |
+| 32 | 10026 | 0.110 | 0.070 | 99.820 |
+| 30 | 10020 | 0.000 | 0.070 | 99.930 |
+| 48 | 10014 | 0.020 | 0.060 | 99.920 |
+| 20 | 10126 | 0.000 | 0.059 | 99.941 |
+| 54 | 10001 | 0.040 | 0.010 | 99.950 |
+| 9 | 11656 | 99.991 | 0.009 | 0.000 |
+| 0 | 27645 | 0.000 | 0.000 | 100.000 |
+| 14 | 10228 | 0.000 | 0.000 | 100.000 |
+| 21 | 10116 | 0.000 | 0.000 | 100.000 |
+
+##### FalsePositive
+
+- IncidentIds with more than 10,000 incidents were ranked by their FalsePositive percentage. Several IncidentIds exhibit a very high FalsePositive rate, suggesting a strong relationship between IncidentId and the target variable.
+
+```python
+FalsePositive_df=df.sort_values('FalsePositive_pct',ascending=False)
+
+FalsePositive_df.head(20)
+```
+
+| IncidentId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 26 | 10047 | **100.000** | 0.000 | 0.000 |
+| 34 | 10031 | **100.000** | 0.000 | 0.000 |
+| 52 | 10008 | **100.000** | 0.000 | 0.000 |
+| 9 | 11656 | 99.991 | 0.009 | 0.000 |
+| 33 | 10027 | 99.791 | 0.000 | 0.209 |
+| 7 | 12252 | 42.450 | 57.329 | 0.220 |
+| 24 | 10042 | 0.219 | 0.209 | 99.572 |
+| 32 | 10026 | 0.110 | 0.070 | 99.820 |
+| 39 | 10021 | 0.080 | 0.170 | 99.751 |
+| 27 | 10037 | 0.070 | 0.319 | 99.611 |
+| 46 | 10006 | 0.060 | 0.000 | 99.940 |
+| 59 | 10008 | 0.040 | 0.000 | 99.960 |
+| 54 | 10001 | 0.040 | 0.010 | 99.950 |
+| 48 | 10014 | 0.020 | 0.060 | 99.920 |
+| 56 | 10010 | 0.020 | 0.000 | 99.980 |
+| 0 | 27645 | 0.000 | 0.000 | 100.000 |
+| 2 | 20525 | 0.000 | 99.937 | 0.063 |
+| 14 | 10228 | 0.000 | 0.000 | 100.000 |
+| 17 | 10194 | 0.000 | 100.000 | 0.000 |
+| 20 | 10126 | 0.000 | 0.059 | 99.941 |
+
+##### TruePositive
+
+- IncidentIds with more than 10,000 incidents were ranked by their TruePositive percentage. Several IncidentIds exhibit a very high TruePositive rate, suggesting a strong relationship between IncidentId and the target variable.
+
+```python
+TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
+
+TruePositive_df.head(20)
+```
+
+| IncidentId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 0 | 27645 | 0.000 | 0.000 | **100.000** |
+| 14 | 10228 | 0.000 | 0.000 | **100.000** |
+| 21 | 10116 | 0.000 | 0.000 | **100.000** |
+| 29 | 10037 | 0.000 | 0.000 | **100.000** |
+| 31 | 10035 | 0.000 | 0.000 | **100.000** |
+| 35 | 10030 | 0.000 | 0.000 | **100.000** |
+| 40 | 10019 | 0.000 | 0.000 | **100.000** |
+| 42 | 10017 | 0.000 | 0.000 | **100.000** |
+| 37 | 10016 | 0.000 | 0.000 | **100.000** |
+| 58 | 10008 | 0.000 | 0.000 | **100.000** |
+| 60 | 10008 | 0.000 | 0.000 | **100.000** |
+| 69 | 10003 | 0.000 | 0.000 | **100.000** |
+| 70 | 10003 | 0.000 | 0.000 | **100.000** |
+| 72 | 10002 | 0.000 | 0.000 | **100.000** |
+| 73 | 10002 | 0.000 | 0.000 | **100.000** |
+| 56 | 10010 | 0.020 | 0.000 | 99.980 |
+| 59 | 10008 | 0.040 | 0.000 | 99.960 |
+| 54 | 10001 | 0.040 | 0.010 | 99.950 |
+| 20 | 10126 | 0.000 | 0.059 | 99.941 |
+| 46 | 10006 | 0.060 | 0.000 | 99.940 |
+
+#### Dominant Class Category
+
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+
+result['max_target_pct'] = (
+    result[target_cols].max(axis=1)
+    / result['total_count'] * 100
+)
+
+result['max_target_pct'].describe()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['max_target_pct'], bins=30)
+
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of IncidentIds")
+plt.title("Distribution of Dominant Target Percentage")
+
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class_incident_id.png)
+
+#### Purity Statistics
+
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
+
+100% Pure : 352095  
+>99% Pure : 352674  
+>95% Pure : 356014  
+<80% Pure : 71785
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+
+result['entropy'] = -(
+    p * np.log2(p.replace(0, np.nan))
+).sum(axis=1)
+
+result[['IncidentId','entropy']].head()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['entropy'], bins=30)
+
+plt.xlabel("Entropy")
+plt.ylabel("Number of IncidentIds")
+plt.title("Entropy Distribution Across IncidentIds")
+
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist_incident_id.png)
+
+#### Target Distribtution for top 20 IncidentIds
+
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('IncidentId')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 IncidentIds")
+
+plt.show()
+```
+
+![Target Distribution For top 20 IncidentIds](images/tar_dist_top_20_incident_id.png)
+
+#### Dominant Class Count
+
+```python
+result['majority_class'].value_counts().plot.bar()
+
+plt.ylabel("Number of IncidentIds")
+plt.title("Dominant IncidentGrade per IncidentId")
+
+plt.show()
+```
+
+![Dominant Class Count](images/dom_class_count_incident_id.png)
+
+### Relationship with other numeric Cols
+
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+
+    corr_list.append(
+        chunk[numeric_cols].corr()['IncidentId']
+    )
+
+IncidentId_corr = pd.concat(
+    corr_list,
+    axis=1
+).mean(axis=1)
+
+IncidentId_corr = (
+    IncidentId_corr
+    .drop('IncidentId')
+    .sort_values(key=abs, ascending=False)
+)
+
+print(IncidentId_corr)
+```
+
+| Feature | Correlation with IncidentId |
+|:------------------|-----------------------:|
+| DetectorId | 0.059369 |
+| CountryCode | 0.025984 |
+| OrgId | 0.025984 |
+| City | -0.043929 |
+| State | -0.038437 |
+| OSVersion | -0.043929 |
+| IpAddress | 0.059369 |
+| ApplicationId | -0.021807 |
+| DeviceId | 0.007700 |
+
+- Observation: IncidentId exhibits generally weak linear correlations with the remaining numeric (identifier) features. The correlations remain relatively small, suggesting that IncidentId captures information largely independent of the other encoded identifier features. Since these variables are high-cardinality identifiers rather than true continuous measurements, Pearson correlation should be interpreted only as a descriptive measure and not as evidence of strong feature dependence.
+
+
+## IpAddress
+
+- No need for standardization.
+- No missing values.
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+    s = chunk_dict[i]["IpAddress"]
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+    print(non_numeric.unique())
+```
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+- Number of unique values varies slightly across chunks.
+- Taking the union across all chunks gives **285957 unique IpAddress values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+    print(chunk_dict[i]["IpAddress"].nunique())
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+    pd.concat([chunk_dict[i]['IpAddress'] for i in chunk_dict])
+    .value_counts(dropna=False)
+    .rename('count')
+    .reset_index()
+)
+
+freq.columns = ['IpAddress', 'count']
+
+freq['count_pct'] = (
+    (freq['count'] / total_valid_rows) * 100
+).round(2).astype(str) + '%'
+```
+
+#### Top 20 IpAddress
+
+| IpAddress | Count | Count (%) |
+|------:|------:|------:|
+| 360606 | 7337288 | 77.12% |
+| 0 | 12469 | 0.13% |
+| 3 | 9868 | 0.10% |
+| 1 | 9759 | 0.10% |
+| 2 | 9239 | 0.10% |
+| 4 | 7975 | 0.08% |
+| 7 | 6974 | 0.07% |
+| 5 | 6724 | 0.07% |
+| 6 | 6680 | 0.07% |
+| 8 | 5621 | 0.06% |
+| 9 | 5265 | 0.06% |
+| 11 | 5110 | 0.05% |
+| 13 | 4698 | 0.05% |
+| 12 | 4537 | 0.05% |
+| 14 | 4407 | 0.05% |
+| 20 | 4238 | 0.04% |
+| 18 | 4238 | 0.04% |
+| 19 | 4238 | 0.04% |
+| 17 | 4076 | 0.04% |
+| 10 | 3960 | 0.04% |
+
+### Observations
+
+- 199368 categories appear fewer than 3 times.
+- 236723 categories appear fewer than 5 times.
+- 260174 categories appear fewer than 10 times.
+- One IpAddress category contributes approximately 77% of the entire dataset.
+- The remaining IpAddress values form a highly long-tailed distribution.
+- Total unique categories = **285957**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 2 |
+| 1000-10000 | 144 |
+| 100-1000 | 3164 |
+| 10-100 | 22473 |
+| 5-10 | 23451 |
+| 3-5 | 37355 |
+| 1-3 | 199368 |
+
+![Frequency Distribution](images/freq_distri_ip_address.png)
+
+![Contribution Distribution](images/contribution_ip_address.png)
+
+- Nearly one IpAddress appears on ~77% of the data.
+
+![Contribution Distribution](images/skewed_ip_address.png)
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+    df = chunk_dict[i][['IpAddress', 'IncidentGrade']].copy()
+
+    category_counts = (
+        df.groupby(['IpAddress', 'IncidentGrade'])
+          .size()
+          .unstack(fill_value=0)
+    )
+
+    dfs.append(category_counts)
+
+result = (
+    pd.concat(dfs)
+      .groupby('IpAddress')
+      .sum()
+      .reset_index()
+)
+
+result.columns.name = None
+
+result['total_count'] = (
+    result['FalsePositive']
+    + result['BenignPositive']
+    + result['TruePositive']
+)
+
+result['FalsePositive_pct'] = (
+    (result['FalsePositive'] / result['total_count']) * 100
+).round(3)
+
+result['BenignPositive_pct'] = (
+    (result['BenignPositive'] / result['total_count']) * 100
+).round(3)
+
+result['TruePositive_pct'] = (
+    (result['TruePositive'] / result['total_count']) * 100
+).round(3)
+```
+
+#### Conditional Target Distribution (Target | IpAddress)
+
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | IpAddress)). It helps identify IpAddress values whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+
+- IpAddress values with more than 10,000 incidents were ranked by their BenignPositive percentage. Several IpAddress values exhibit a very high BenignPositive rate, suggesting a strong relationship between IpAddress and the target variable.
+
+```python
+df=result[['IpAddress','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+
+BenignPositive_df=df.sort_values('BenignPositive_pct',ascending=False)
+
+BenignPositive_df.head(20)
+```
+
+| IpAddress | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 360606 | 7285949 | 21.430 | 46.862 | 31.708 |
+| 0 | 12469 | 3.015 | 3.272 | 93.712 |
+
+##### FalsePositive
+
+- IpAddress values with more than 10,000 incidents were ranked by their FalsePositive percentage. Several IpAddress values exhibit a very high FalsePositive rate, suggesting a strong relationship between IpAddress and the target variable.
+
+```python
+FalsePositive_df=df.sort_values('FalsePositive_pct',ascending=False)
+
+FalsePositive_df.head(20)
+```
+
+| IpAddress | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 360606 | 7285949 | 21.430 | 46.862 | 31.708 |
+| 0 | 12469 | 3.015 | 3.272 | 93.712 |
+
+##### TruePositive
+
+- IpAddress values with more than 10,000 incidents were ranked by their TruePositive percentage. Several IpAddress values exhibit a very high TruePositive rate, suggesting a strong relationship between IpAddress and the target variable.
+
+```python
+TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
+
+TruePositive_df.head(20)
+```
+
+| IpAddress | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 0 | 12469 | 3.015 | 3.272 | **93.712** |
+| 360606 | 7285949 | 21.430 | 46.862 | 31.708 |
+
+#### Dominant Class Category
+
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+
+result['max_target_pct'] = (
+    result[target_cols].max(axis=1)
+    / result['total_count'] * 100
+)
+
+result['max_target_pct'].describe()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['max_target_pct'], bins=30)
+
+plt.xlabel("Dominant Class Percentage")
+plt.ylabel("Number of IpAddresses")
+plt.title("Distribution of Dominant Target Percentage")
+
+plt.show()
+```
+
+![Dominant Class Category](images/dom_class_ip_address.png)
+
+#### Purity Statistics
+
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+```
+
+100% Pure : 252256  
+>99% Pure : 252398  
+>95% Pure : 253391  
+<80% Pure : 27608
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+
+result['entropy'] = -(
+    p * np.log2(p.replace(0, np.nan))
+).sum(axis=1)
+
+result[['IpAddress','entropy']].head()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['entropy'], bins=30)
+
+plt.xlabel("Entropy")
+plt.ylabel("Number of IpAddresses")
+plt.title("Entropy Distribution Across IpAddresses")
+
+plt.show()
+```
+
+![Entropy Distribution](images/entropy_dist_ip_address.png)
+
+#### Target Distribtution for top 20 IpAddresses
+
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('IpAddress')[
+    ['FalsePositive_pct',
+     'BenignPositive_pct',
+     'TruePositive_pct']
+]
+
+plot_df.plot(
+    kind='bar',
+    stacked=True,
+    figsize=(12,5)
+)
+
+plt.ylabel("Percentage")
+plt.title("Target Distribution for Top 20 IpAddresses")
+
+plt.show()
+```
+
+![Target Distribution For top 20 IpAddresses](images/tar_dist_top_20_ip_address.png)
+
+#### Dominant Class Count
+
+```python
+result['majority_class'].value_counts().plot.bar()
+
+plt.ylabel("Number of IpAddresses")
+plt.title("Dominant IncidentGrade per IpAddress")
+
+plt.show()
+```
+
+![Dominant Class Count](images/dom_class_count_ip_address.png)
+
+### Relationship with other numeric Cols
+
+```python
+corr_list = []
+
+for chunk in chunk_dict.values():
+
+    corr_list.append(
+        chunk[numeric_cols].corr()['IpAddress']
+    )
+
+IpAddress_corr = pd.concat(
+    corr_list,
+    axis=1
+).mean(axis=1)
+
+IpAddress_corr = (
+    IpAddress_corr
+    .drop('IpAddress')
+    .sort_values(key=abs, ascending=False)
+)
+
+print(IpAddress_corr)
+```
+
+| Feature | Correlation with IpAddress |
+|:------------------|-----------------------:|
+| OrgId | 0.116416 |
+| DetectorId | 0.043654 |
+| CountryCode | -0.076495 |
+| State | -0.076495 |
+| City | -0.076495 |
+| IncidentId | 0.059369 |
+| ApplicationId | 0.018115 |
+| DeviceId | -0.029408 |
+| OSVersion | -0.076495 |
+| OSFamily | -0.076495 |
+
+- Observation: IpAddress exhibits generally weak linear correlations with the remaining numeric (identifier) features. The highest positive correlation is with OrgId (0.116), while the remaining features show relatively weak relationships. Since these variables are high-cardinality identifiers rather than true continuous measurements, Pearson correlation should be interpreted only as a descriptive measure and not as evidence of strong feature dependence.
