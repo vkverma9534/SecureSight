@@ -3706,3 +3706,2359 @@ print(IpAddress_corr)
 | OSFamily | -0.076495 |
 
 - Observation: IpAddress exhibits generally weak linear correlations with the remaining numeric (identifier) features. The highest positive correlation is with OrgId (0.116), while the remaining features show relatively weak relationships. Since these variables are high-cardinality identifiers rather than true continuous measurements, Pearson correlation should be interpreted only as a descriptive measure and not as evidence of strong feature dependence.
+
+## DeviceName
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+```python
+for i in range(len(chunk_dict)):
+
+    s = chunk_dict[i]["DeviceName"]
+
+    non_numeric = s[~s.apply(lambda x: isinstance(x, (int, float)))]
+
+    print(non_numeric.unique())
+
+```
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **114541 unique DeviceName values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+
+    print(chunk_dict[i]["DeviceName"].nunique())
+
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+
+    pd.concat([chunk_dict[i]['DeviceName'] for i in chunk_dict])
+
+    .value_counts(dropna=False)
+
+    .rename('count')
+
+    .reset_index()
+
+)
+
+freq.columns = ['DeviceName', 'count']
+
+freq['count_pct'] = (
+
+    (freq['count'] / total_valid_rows) * 100
+
+).round(2).astype(str) + '%'
+
+```
+
+#### Top 20 DeviceName
+
+| DeviceName | Count | Count (%) |
+|------:|------:|------:|
+| 153085 | 8817161 | 92.67% |
+| 0 | 4376 | 0.05% |
+| 1 | 3944 | 0.04% |
+| 5 | 2153 | 0.02% |
+| 4 | 2152 | 0.02% |
+| 6 | 1879 | 0.02% |
+| 13 | 1727 | 0.02% |
+| 7 | 1631 | 0.02% |
+| 10 | 1545 | 0.02% |
+| 9 | 1519 | 0.02% |
+| 8 | 1512 | 0.02% |
+| 11 | 1284 | 0.01% |
+| 12 | 1251 | 0.01% |
+| 16 | 1187 | 0.01% |
+| 15 | 1095 | 0.01% |
+| 14 | 1094 | 0.01% |
+| 22 | 1021 | 0.01% |
+| 28 | 932 | 0.01% |
+| 20 | 920 | 0.01% |
+| 17 | 813 | 0.01% |
+
+### Observations
+
+- 75143 categories appear fewer than 3 times.
+
+- 91717 categories appear fewer than 5 times.
+
+- 103849 categories appear fewer than 10 times.
+
+- One DeviceName category contributes approximately 93% of the entire dataset.
+
+- The remaining DeviceName values form a highly long-tailed distribution.
+
+- Total unique categories = **114541**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 1 |
+| 1000-10000 | 16 |
+| 100-1000 | 1046 |
+| 10-100 | 9629 |
+| 5-10 | 12132 |
+| 3-5 | 16574 |
+| 1-3 | 75143 |
+
+[pic]
+
+[pic]
+
+- Nearly one DeviceName appears on ~93% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+
+    df = chunk_dict[i][['DeviceName', 'IncidentGrade']].copy()
+
+    category_counts = (
+
+        df.groupby(['DeviceName', 'IncidentGrade'])
+
+          .size()
+
+          .unstack(fill_value=0)
+
+    )
+
+    dfs.append(category_counts)
+
+result = (
+
+    pd.concat(dfs)
+
+      .groupby('DeviceName')
+
+      .sum()
+
+      .reset_index()
+
+)
+
+result.columns.name = None
+
+result['total_count'] = (
+
+    result['FalsePositive']
+
+    + result['BenignPositive']
+
+    + result['TruePositive']
+
+)
+
+result['FalsePositive_pct'] = (
+
+    (result['FalsePositive'] / result['total_count']) * 100
+
+).round(3)
+
+result['BenignPositive_pct'] = (
+
+    (result['BenignPositive'] / result['total_count']) * 100
+
+).round(3)
+
+result['TruePositive_pct'] = (
+
+    (result['TruePositive'] / result['total_count']) * 100
+
+).round(3)
+
+```
+
+#### Conditional Target Distribution (Target | DeviceName)
+
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | DeviceName)). It helps identify DeviceName values whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+
+- DeviceName values with more than 10,000 incidents were ranked by their BenignPositive percentage. Several DeviceName values exhibit a very high BenignPositive rate, suggesting a strong relationship between DeviceName and the target variable.
+
+```python
+df=result[['DeviceName','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+
+BenignPositive_df=df.sort_values('BenignPositive_pct',ascending=False)
+
+BenignPositive_df.head(20)
+
+```
+
+| DeviceName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 153085 | 8767390 | 20.488 | 42.559 | 36.953 |
+
+##### FalsePositive
+
+- DeviceName values with more than 10,000 incidents were ranked by their FalsePositive percentage. Several DeviceName values exhibit a very high FalsePositive rate, suggesting a strong relationship between DeviceName and the target variable.
+
+```python
+FalsePositive_df=df.sort_values('FalsePositive_pct',ascending=False)
+
+FalsePositive_df.head(20)
+
+```
+
+| DeviceName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 153085 | 8767390 | 20.488 | 42.559 | 36.953 |
+
+##### TruePositive
+
+- DeviceName values with more than 10,000 incidents were ranked by their TruePositive percentage. Several DeviceName values exhibit a very high TruePositive rate, suggesting a strong relationship between DeviceName and the target variable.
+
+```python
+TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
+
+TruePositive_df.head(20)
+
+```
+
+| DeviceName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 153085 | 8767390 | 20.488 | 42.559 | 36.953 |
+
+#### Dominant Class Category
+
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+
+result['max_target_pct'] = (
+
+    result[target_cols].max(axis=1)
+
+    / result['total_count'] * 100
+
+)
+
+result['max_target_pct'].describe()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['max_target_pct'], bins=30)
+
+plt.xlabel("Dominant Class Percentage")
+
+plt.ylabel("Number of DeviceNames")
+
+plt.title("Distribution of Dominant Target Percentage")
+
+plt.show()
+
+```
+
+[pic]
+
+#### Purity Statistics
+
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+
+```
+
+100% Pure : 108489
+
+>99% Pure : 108506
+
+>95% Pure : 108638
+
+<80% Pure : 4076
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+
+result['entropy'] = -(
+
+    p * np.log2(p.replace(0, np.nan))
+
+).sum(axis=1)
+
+result[['DeviceName','entropy']].head()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['entropy'], bins=30)
+
+plt.xlabel("Entropy")
+
+plt.ylabel("Number of DeviceNames")
+
+plt.title("Entropy Distribution Across DeviceNames")
+
+plt.show()
+
+```
+
+[pic]
+
+#### Target Distribtution for top 20 DeviceNames
+
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('DeviceName')[
+
+    ['FalsePositive_pct',
+
+     'BenignPositive_pct',
+
+     'TruePositive_pct']
+
+]
+
+plot_df.plot(
+
+    kind='bar',
+
+    stacked=True,
+
+    figsize=(12,5)
+
+)
+
+plt.ylabel("Percentage")
+
+plt.title("Target Distribution for Top 20 DeviceNames")
+
+plt.show()
+
+```
+
+[pic]
+
+#### Dominant Class Count
+
+```python
+result['majority_class'].value_counts().plot.bar()
+
+plt.ylabel("Number of DeviceNames")
+
+plt.title("Dominant IncidentGrade per DeviceName")
+
+plt.show()
+
+```
+
+[pic]
+
+
+## EmailClusterId
+
+- No need for standardization.
+
+- 9417449 missing values.
+
+- Missing values account for 98.9825% of the data.
+
+- Data contains missing values, so the dtype is affected by the presence of NaN values.
+
+### Cardinality
+
+- Cardinality is high considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **26486 unique EmailClusterId values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+
+    print(chunk_dict[i]["EmailClusterId"].nunique())
+
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+
+    pd.concat([chunk_dict[i]['EmailClusterId'] for i in chunk_dict])
+
+    .value_counts(dropna=False)
+
+    .rename('count')
+
+    .reset_index()
+
+)
+
+freq.columns = ['EmailClusterId', 'count']
+
+freq['count_pct'] = (
+
+    (freq['count'] / total_valid_rows) * 100
+
+).round(2).astype(str) + '%'
+
+```
+
+#### Top 20 EmailClusterId
+
+| EmailClusterId | Count | Count (%) |
+|------:|------:|------:|
+| NaN | 9417449 | 98.98% |
+| 4218787000 | 1990 | 0.02% |
+| 4023350000 | 1904 | 0.02% |
+| 4140628000 | 1736 | 0.02% |
+| 1962111000 | 824 | 0.01% |
+| 2834093000 | 595 | 0.01% |
+| 2122467000 | 589 | 0.01% |
+| 3425847000 | 523 | 0.01% |
+| 2763420000 | 521 | 0.01% |
+| 2681535000 | 488 | 0.01% |
+| 3370906000 | 456 | 0.00% |
+| 2900577000 | 424 | 0.00% |
+| 4143708000 | 410 | 0.00% |
+| 4107518000 | 364 | 0.00% |
+| 2901398000 | 349 | 0.00% |
+| 4274415000 | 297 | 0.00% |
+| 3423487000 | 280 | 0.00% |
+| 3326931000 | 278 | 0.00% |
+| 2136033000 | 278 | 0.00% |
+| 3155166000 | 273 | 0.00% |
+
+### Observations
+
+- 19597 categories appear fewer than 3 times.
+
+- 23430 categories appear fewer than 5 times.
+
+- 25238 categories appear fewer than 10 times.
+
+- Missing EmailClusterId values contribute approximately 99% of the entire dataset.
+
+- The remaining EmailClusterId values form a highly long-tailed distribution.
+
+- Total unique categories = **26486**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 1 |
+| 1000-10000 | 3 |
+| 100-1000 | 67 |
+| 10-100 | 1166 |
+| 5-10 | 1808 |
+| 3-5 | 3833 |
+| 1-3 | 19597 |
+
+[pic]
+
+[pic]
+
+- Nearly all records have a missing EmailClusterId.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with the missing category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+```python
+dfs = []
+
+for i in range(len(chunk_dict)):
+
+    df = chunk_dict[i][['EmailClusterId', 'IncidentGrade']].copy()
+
+    category_counts = (
+
+        df.groupby(['EmailClusterId', 'IncidentGrade'])
+
+          .size()
+
+          .unstack(fill_value=0)
+
+    )
+
+    dfs.append(category_counts)
+
+result = (
+
+    pd.concat(dfs)
+
+      .groupby('EmailClusterId')
+
+      .sum()
+
+      .reset_index()
+
+)
+
+result.columns.name = None
+
+result['total_count'] = (
+
+    result['FalsePositive']
+
+    + result['BenignPositive']
+
+    + result['TruePositive']
+
+)
+
+result['FalsePositive_pct'] = (
+
+    (result['FalsePositive'] / result['total_count']) * 100
+
+).round(3)
+
+result['BenignPositive_pct'] = (
+
+    (result['BenignPositive'] / result['total_count']) * 100
+
+).round(3)
+
+result['TruePositive_pct'] = (
+
+    (result['TruePositive'] / result['total_count']) * 100
+
+).round(3)
+
+```
+
+#### Conditional Target Distribution (Target | EmailClusterId)
+
+- This analysis examines the conditional distribution of the target variable given the feature (P(Target | EmailClusterId)). It helps identify EmailClusterId values whose incident labels are highly skewed toward a particular class, which can indicate that the feature has predictive power.
+
+##### BenignPositive
+
+- EmailClusterId values with more than 10,000 incidents were ranked by their BenignPositive percentage. Several EmailClusterId values exhibit a very high BenignPositive rate, suggesting a strong relationship between EmailClusterId and the target variable.
+
+```python
+df=result[['EmailClusterId','total_count','FalsePositive_pct','BenignPositive_pct','TruePositive_pct']][result['total_count']>10000]
+
+BenignPositive_df=df.sort_values('BenignPositive_pct',ascending=False)
+
+BenignPositive_df.head(20)
+
+```
+
+| EmailClusterId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| NaN | 9366110 | 21.504 | 43.355 | 35.141 |
+
+##### FalsePositive
+
+- EmailClusterId values with more than 10,000 incidents were ranked by their FalsePositive percentage. Several EmailClusterId values exhibit a very high FalsePositive rate, suggesting a strong relationship between EmailClusterId and the target variable.
+
+```python
+FalsePositive_df=df.sort_values('FalsePositive_pct',ascending=False)
+
+FalsePositive_df.head(20)
+
+```
+
+| EmailClusterId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| NaN | 9366110 | 21.504 | 43.355 | 35.141 |
+
+##### TruePositive
+
+- EmailClusterId values with more than 10,000 incidents were ranked by their TruePositive percentage. Several EmailClusterId values exhibit a very high TruePositive rate, suggesting a strong relationship between EmailClusterId and the target variable.
+
+```python
+TruePositive_df=df.sort_values('TruePositive_pct',ascending=False)
+
+TruePositive_df.head(20)
+
+```
+
+| EmailClusterId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| NaN | 9366110 | 21.504 | 43.355 | 35.141 |
+
+#### Dominant Class Category
+
+```python
+target_cols = ['FalsePositive', 'BenignPositive', 'TruePositive']
+
+result['max_target_pct'] = (
+
+    result[target_cols].max(axis=1)
+
+    / result['total_count'] * 100
+
+)
+
+result['max_target_pct'].describe()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['max_target_pct'], bins=30)
+
+plt.xlabel("Dominant Class Percentage")
+
+plt.ylabel("Number of EmailClusterIds")
+
+plt.title("Distribution of Dominant Target Percentage")
+
+plt.show()
+
+```
+
+[pic]
+
+#### Purity Statistics
+
+```python
+print("100% Pure :", (result['max_target_pct'] == 100).sum())
+
+print(">99% Pure :", (result['max_target_pct'] >= 99).sum())
+
+print(">95% Pure :", (result['max_target_pct'] >= 95).sum())
+
+print("<80% Pure :", (result['max_target_pct'] < 80).sum())
+
+```
+
+100% Pure : 24350
+
+>99% Pure : 24351
+
+>95% Pure : 24372
+
+<80% Pure : 1758
+
+#### Entrory Distribution
+
+```python
+p = result[target_cols].div(result['total_count'], axis=0)
+
+result['entropy'] = -(
+
+    p * np.log2(p.replace(0, np.nan))
+
+).sum(axis=1)
+
+result[['EmailClusterId','entropy']].head()
+
+plt.figure(figsize=(8,5))
+
+plt.hist(result['entropy'], bins=30)
+
+plt.xlabel("Entropy")
+
+plt.ylabel("Number of EmailClusterIds")
+
+plt.title("Entropy Distribution Across EmailClusterIds")
+
+plt.show()
+
+```
+
+[pic]
+
+#### Target Distribtution for top 20 EmailClusterIds
+
+```python
+top = result.nlargest(20,'total_count')
+
+plot_df = top.set_index('EmailClusterId')[
+
+    ['FalsePositive_pct',
+
+     'BenignPositive_pct',
+
+     'TruePositive_pct']
+
+]
+
+plot_df.plot(
+
+    kind='bar',
+
+    stacked=True,
+
+    figsize=(12,5)
+
+)
+
+plt.ylabel("Percentage")
+
+plt.title("Target Distribution for Top 20 EmailClusterIds")
+
+plt.show()
+
+```
+
+[pic]
+
+#### Dominant Class Count
+
+```python
+result['majority_class'].value_counts().plot.bar()
+
+plt.ylabel("Number of EmailClusterIds")
+
+plt.title("Dominant IncidentGrade per EmailClusterId")
+
+plt.show()
+
+```
+
+[pic]
+
+
+## RegistryValueName
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is low considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **525 unique RegistryValueName values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+
+    print(chunk_dict[i]["RegistryValueName"].nunique())
+
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+
+    pd.concat([chunk_dict[i]['RegistryValueName'] for i in chunk_dict])
+
+    .value_counts(dropna=False)
+
+    .rename('count')
+
+    .reset_index()
+
+)
+
+freq.columns = ['RegistryValueName', 'count']
+
+freq['count_pct'] = (
+
+    (freq['count'] / total_valid_rows) * 100
+
+).round(2).astype(str) + '%'
+
+```
+
+#### Top 20 RegistryValueName
+
+| RegistryValueName | Count | Count (%) |
+|------:|------:|------:|
+| 635 | 9509781 | 99.95% |
+| 0 | 483 | 0.01% |
+| 1 | 483 | 0.01% |
+| 5 | 311 | 0.00% |
+| 6 | 256 | 0.00% |
+| 10 | 113 | 0.00% |
+| 9 | 112 | 0.00% |
+| 8 | 110 | 0.00% |
+| 2 | 106 | 0.00% |
+| 3 | 76 | 0.00% |
+| 16 | 75 | 0.00% |
+| 4 | 73 | 0.00% |
+| 13 | 70 | 0.00% |
+| 11 | 65 | 0.00% |
+| 17 | 59 | 0.00% |
+| 14 | 56 | 0.00% |
+| 7 | 55 | 0.00% |
+| 12 | 54 | 0.00% |
+| 20 | 50 | 0.00% |
+| 18 | 44 | 0.00% |
+
+### Observations
+
+- 384 categories appear fewer than 3 times.
+
+- 425 categories appear fewer than 5 times.
+
+- 466 categories appear fewer than 10 times.
+
+- One RegistryValueName category contributes approximately 100% of the entire dataset.
+
+- The remaining RegistryValueName values form a highly long-tailed distribution.
+
+- Total unique categories = **525**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 1 |
+| 1000-10000 | 0 |
+| 100-1000 | 8 |
+| 10-100 | 50 |
+| 5-10 | 41 |
+| 3-5 | 41 |
+| 1-3 | 384 |
+
+[pic]
+
+[pic]
+
+- Nearly one RegistryValueName appears on ~100% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+[pic]
+
+#### Conditional Target Distribution (Target | RegistryValueName)
+
+##### BenignPositive
+
+| RegistryValueName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 635 | 9458442 | 21.467 | 43.435 | 35.098 |
+
+##### FalsePositive
+
+| RegistryValueName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 635 | 9458442 | 21.467 | 43.435 | 35.098 |
+
+##### TruePositive
+
+| RegistryValueName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 635 | 9458442 | 21.467 | 43.435 | 35.098 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 472
+
+>99% Pure : 472
+
+>95% Pure : 475
+
+<80% Pure : 35
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 RegistryValueName
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## RegistryValueData
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is low considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **699 unique RegistryValueData values** in the training data.
+
+```python
+for i in range(len(chunk_dict)):
+
+    print(chunk_dict[i]["RegistryValueData"].nunique())
+
+```
+
+### Frequency Distribution
+
+```python
+freq = (
+
+    pd.concat([chunk_dict[i]['RegistryValueData'] for i in chunk_dict])
+
+    .value_counts(dropna=False)
+
+    .rename('count')
+
+    .reset_index()
+
+)
+
+freq.columns = ['RegistryValueData', 'count']
+
+freq['count_pct'] = (
+
+    (freq['count'] / total_valid_rows) * 100
+
+).round(2).astype(str) + '%'
+
+```
+
+#### Top 20 RegistryValueData
+
+| RegistryValueData | Count | Count (%) |
+|------:|------:|------:|
+| 860 | 9508855 | 99.94% |
+| 0 | 1397 | 0.01% |
+| 2 | 453 | 0.00% |
+| 1 | 277 | 0.00% |
+| 4 | 212 | 0.00% |
+| 3 | 166 | 0.00% |
+| 5 | 143 | 0.00% |
+| 6 | 125 | 0.00% |
+| 8 | 76 | 0.00% |
+| 9 | 70 | 0.00% |
+| 7 | 56 | 0.00% |
+| 12 | 40 | 0.00% |
+| 11 | 39 | 0.00% |
+| 20 | 37 | 0.00% |
+| 10 | 34 | 0.00% |
+| 13 | 32 | 0.00% |
+| 17 | 29 | 0.00% |
+| 19 | 27 | 0.00% |
+| 25 | 26 | 0.00% |
+| 18 | 23 | 0.00% |
+
+### Observations
+
+- 461 categories appear fewer than 3 times.
+
+- 547 categories appear fewer than 5 times.
+
+- 631 categories appear fewer than 10 times.
+
+- One RegistryValueData category contributes approximately 100% of the entire dataset.
+
+- The remaining RegistryValueData values form a highly long-tailed distribution.
+
+- Total unique categories = **699**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 1 |
+| 1000-10000 | 1 |
+| 100-1000 | 6 |
+| 10-100 | 60 |
+| 5-10 | 84 |
+| 3-5 | 86 |
+| 1-3 | 461 |
+
+[pic]
+
+[pic]
+
+- Nearly one RegistryValueData appears on ~100% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+[pic]
+
+#### Conditional Target Distribution (Target | RegistryValueData)
+
+##### BenignPositive
+
+| RegistryValueData | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 860 | 9457516 | 21.462 | 43.437 | 35.101 |
+
+##### FalsePositive
+
+| RegistryValueData | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 860 | 9457516 | 21.462 | 43.437 | 35.101 |
+
+##### TruePositive
+
+| RegistryValueData | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 860 | 9457516 | 21.462 | 43.437 | 35.101 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 650
+
+>99% Pure : 650
+
+>95% Pure : 651
+
+<80% Pure : 41
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 RegistryValueData
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## ApplicationName
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is relatively low considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **2681 unique ApplicationName values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 ApplicationName
+
+| ApplicationName | Count | Count (%) |
+|------:|------:|------:|
+| 3421 | 9295058 | 97.70% |
+| 0 | 61884 | 0.65% |
+| 1 | 38425 | 0.40% |
+| 2 | 36669 | 0.39% |
+| 3 | 31735 | 0.33% |
+| 4 | 22505 | 0.24% |
+| 5 | 6650 | 0.07% |
+| 6 | 2803 | 0.03% |
+| 7 | 2614 | 0.03% |
+| 8 | 1968 | 0.02% |
+| 9 | 1002 | 0.01% |
+| 10 | 705 | 0.01% |
+| 12 | 584 | 0.01% |
+| 11 | 567 | 0.01% |
+| 13 | 482 | 0.01% |
+| 15 | 367 | 0.00% |
+| 14 | 359 | 0.00% |
+| 16 | 299 | 0.00% |
+| 17 | 238 | 0.00% |
+| 18 | 201 | 0.00% |
+
+### Observations
+
+- 2190 categories appear fewer than 3 times.
+
+- 2410 categories appear fewer than 5 times.
+
+- 2532 categories appear fewer than 10 times.
+
+- One ApplicationName category contributes approximately 98% of the entire dataset.
+
+- The remaining ApplicationName values form a highly long-tailed distribution.
+
+- Total unique categories = **2681**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 6 |
+| 1000-10000 | 5 |
+| 100-1000 | 16 |
+| 10-100 | 122 |
+| 5-10 | 122 |
+| 3-5 | 220 |
+| 1-3 | 2190 |
+
+[pic]
+
+[pic]
+
+- Nearly one ApplicationName appears on ~98% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | ApplicationName)
+
+##### BenignPositive
+
+| ApplicationName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 3 | 31735 | 15.922 | 53.657 | 30.421 |
+| 2 | 36669 | 25.302 | 52.548 | 22.149 |
+| 1 | 38425 | 20.359 | 44.638 | 35.003 |
+| 3421 | 9243719 | 21.312 | 43.537 | 35.151 |
+| 0 | 61884 | 16.129 | 32.102 | 51.769 |
+| 4 | 22505 | 99.831 | 0.111 | 0.058 |
+
+##### FalsePositive
+
+| ApplicationName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 4 | 22505 | 99.831 | 0.111 | 0.058 |
+| 2 | 36669 | 25.302 | 52.548 | 22.149 |
+| 3421 | 9243719 | 21.312 | 43.537 | 35.151 |
+| 1 | 38425 | 20.359 | 44.638 | 35.003 |
+| 0 | 61884 | 16.129 | 32.102 | 51.769 |
+| 3 | 31735 | 15.922 | 53.657 | 30.421 |
+
+##### TruePositive
+
+| ApplicationName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 0 | 61884 | 16.129 | 32.102 | **51.769** |
+| 3421 | 9243719 | 21.312 | 43.537 | 35.151 |
+| 1 | 38425 | 20.359 | 44.638 | 35.003 |
+| 3 | 31735 | 15.922 | 53.657 | 30.421 |
+| 2 | 36669 | 25.302 | 52.548 | 22.149 |
+| 4 | 22505 | 99.831 | 0.111 | 0.058 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 2214
+
+>99% Pure : 2215
+
+>95% Pure : 2218
+
+<80% Pure : 427
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 ApplicationName
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## FileName
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **222085 unique FileName values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 FileName
+
+| FileName | Count | Count (%) |
+|------:|------:|------:|
+| 289573 | 8485432 | 89.19% |
+| 0 | 87736 | 0.92% |
+| 1 | 71009 | 0.75% |
+| 2 | 18194 | 0.19% |
+| 3 | 15383 | 0.16% |
+| 4 | 13041 | 0.14% |
+| 5 | 10521 | 0.11% |
+| 6 | 10090 | 0.11% |
+| 9 | 7651 | 0.08% |
+| 8 | 7579 | 0.08% |
+| 7 | 7457 | 0.08% |
+| 10 | 5499 | 0.06% |
+| 11 | 5206 | 0.05% |
+| 12 | 4800 | 0.05% |
+| 13 | 4426 | 0.05% |
+| 14 | 3849 | 0.04% |
+| 16 | 3747 | 0.04% |
+| 17 | 3252 | 0.03% |
+| 15 | 2920 | 0.03% |
+| 19 | 2684 | 0.03% |
+
+### Observations
+
+- 177600 categories appear fewer than 3 times.
+
+- 203134 categories appear fewer than 5 times.
+
+- 214435 categories appear fewer than 10 times.
+
+- One FileName category contributes approximately 89% of the entire dataset.
+
+- The remaining FileName values form a highly long-tailed distribution.
+
+- Total unique categories = **222085**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 8 |
+| 1000-10000 | 43 |
+| 100-1000 | 647 |
+| 10-100 | 6952 |
+| 5-10 | 11301 |
+| 3-5 | 25534 |
+| 1-3 | 177600 |
+
+[pic]
+
+[pic]
+
+- Nearly one FileName appears on ~89% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | FileName)
+
+##### BenignPositive
+
+| FileName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 6 | 10090 | 0.020 | 99.980 | 0.000 |
+| 3 | 15383 | 1.547 | 98.160 | 0.293 |
+| 5 | 10521 | 10.902 | 85.809 | 3.289 |
+| 1 | 71009 | 12.712 | 75.305 | 11.983 |
+| 0 | 87736 | 14.642 | 65.997 | 19.361 |
+| 4 | 13041 | 26.141 | 60.808 | 13.051 |
+| 289573 | 8434093 | 21.803 | 40.749 | 37.448 |
+| 2 | 18194 | 0.000 | 4.743 | 95.257 |
+
+##### FalsePositive
+
+| FileName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 4 | 13041 | 26.141 | 60.808 | 13.051 |
+| 289573 | 8434093 | 21.803 | 40.749 | 37.448 |
+| 0 | 87736 | 14.642 | 65.997 | 19.361 |
+| 1 | 71009 | 12.712 | 75.305 | 11.983 |
+| 5 | 10521 | 10.902 | 85.809 | 3.289 |
+| 3 | 15383 | 1.547 | 98.160 | 0.293 |
+| 6 | 10090 | 0.020 | 99.980 | 0.000 |
+| 2 | 18194 | 0.000 | 4.743 | 95.257 |
+
+##### TruePositive
+
+| FileName | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 2 | 18194 | 0.000 | 4.743 | **95.257** |
+| 289573 | 8434093 | 21.803 | 40.749 | 37.448 |
+| 0 | 87736 | 14.642 | 65.997 | 19.361 |
+| 4 | 13041 | 26.141 | 60.808 | 13.051 |
+| 1 | 71009 | 12.712 | 75.305 | 11.983 |
+| 5 | 10521 | 10.902 | 85.809 | 3.289 |
+| 3 | 15383 | 1.547 | 98.160 | 0.293 |
+| 6 | 10090 | 0.020 | 99.980 | 0.000 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 217454
+
+>99% Pure : 217470
+
+>95% Pure : 217597
+
+<80% Pure : 3641
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 FileName
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## FolderPath
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **87832 unique FolderPath values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 FolderPath
+
+| FolderPath | Count | Count (%) |
+|------:|------:|------:|
+| 117668 | 8638746 | 90.80% |
+| 0 | 113781 | 1.20% |
+| 1 | 70685 | 0.74% |
+| 2 | 60963 | 0.64% |
+| 3 | 39980 | 0.42% |
+| 4 | 21539 | 0.23% |
+| 5 | 19613 | 0.21% |
+| 6 | 16005 | 0.17% |
+| 8 | 9707 | 0.10% |
+| 7 | 9280 | 0.10% |
+| 9 | 8542 | 0.09% |
+| 10 | 5704 | 0.06% |
+| 13 | 5499 | 0.06% |
+| 12 | 4698 | 0.05% |
+| 14 | 4360 | 0.05% |
+| 15 | 4179 | 0.04% |
+| 18 | 4042 | 0.04% |
+| 16 | 3969 | 0.04% |
+| 19 | 3301 | 0.03% |
+| 17 | 2619 | 0.03% |
+
+### Observations
+
+- 64267 categories appear fewer than 3 times.
+
+- 74661 categories appear fewer than 5 times.
+
+- 81485 categories appear fewer than 10 times.
+
+- One FolderPath category contributes approximately 91% of the entire dataset.
+
+- The remaining FolderPath values form a highly long-tailed distribution.
+
+- Total unique categories = **87832**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 8 |
+| 1000-10000 | 32 |
+| 100-1000 | 564 |
+| 10-100 | 5743 |
+| 5-10 | 6824 |
+| 3-5 | 10394 |
+| 1-3 | 64267 |
+
+[pic]
+
+[pic]
+
+- Nearly one FolderPath appears on ~91% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | FolderPath)
+
+##### BenignPositive
+
+| FolderPath | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 5 | 19613 | 0.000 | 100.000 | 0.000 |
+| 6 | 16005 | 0.850 | 97.020 | 2.131 |
+| 4 | 21539 | 9.049 | 76.777 | 14.174 |
+| 1 | 70685 | 12.682 | 75.307 | 12.011 |
+| 3 | 39980 | 30.963 | 62.589 | 6.448 |
+| 2 | 60963 | 17.196 | 61.242 | 21.562 |
+| 0 | 113781 | 19.857 | 54.746 | 25.396 |
+| 117668 | 8587407 | 21.972 | 40.863 | 37.166 |
+
+##### FalsePositive
+
+| FolderPath | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 3 | 39980 | 30.963 | 62.589 | 6.448 |
+| 117668 | 8587407 | 21.972 | 40.863 | 37.166 |
+| 0 | 113781 | 19.857 | 54.746 | 25.396 |
+| 2 | 60963 | 17.196 | 61.242 | 21.562 |
+| 1 | 70685 | 12.682 | 75.307 | 12.011 |
+| 4 | 21539 | 9.049 | 76.777 | 14.174 |
+| 6 | 16005 | 0.850 | 97.020 | 2.131 |
+| 5 | 19613 | 0.000 | 100.000 | 0.000 |
+
+##### TruePositive
+
+| FolderPath | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 117668 | 8587407 | 21.972 | 40.863 | 37.166 |
+| 0 | 113781 | 19.857 | 54.746 | 25.396 |
+| 2 | 60963 | 17.196 | 61.242 | 21.562 |
+| 4 | 21539 | 9.049 | 76.777 | 14.174 |
+| 1 | 70685 | 12.682 | 75.307 | 12.011 |
+| 3 | 39980 | 30.963 | 62.589 | 6.448 |
+| 6 | 16005 | 0.850 | 97.020 | 2.131 |
+| 5 | 19613 | 0.000 | 100.000 | 0.000 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 86246
+
+>99% Pure : 86254
+
+>95% Pure : 86307
+
+<80% Pure : 1189
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 FolderPath
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## OSFamily
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is very low considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **6 unique OSFamily values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 OSFamily
+
+| OSFamily | Count | Count (%) |
+|------:|------:|------:|
+| 5 | 9320079 | 97.96% |
+| 0 | 189946 | 2.00% |
+| 1 | 2732 | 0.03% |
+| 2 | 1496 | 0.02% |
+| 3 | 7 | 0.00% |
+| 4 | 1 | 0.00% |
+
+### Observations
+
+- 1 category appears fewer than 3 times.
+
+- 1 category appears fewer than 5 times.
+
+- 2 categories appear fewer than 10 times.
+
+- One OSFamily category contributes approximately 98% of the entire dataset.
+
+- The remaining OSFamily values form a highly long-tailed distribution.
+
+- Total unique categories = **6**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 2 |
+| 1000-10000 | 2 |
+| 100-1000 | 0 |
+| 10-100 | 0 |
+| 5-10 | 1 |
+| 3-5 | 0 |
+| 1-3 | 1 |
+
+[pic]
+
+[pic]
+
+- Nearly one OSFamily appears on ~98% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | OSFamily)
+
+##### BenignPositive
+
+| OSFamily | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 0 | 188617 | 20.563 | 63.946 | 15.491 |
+| 5 | 9270083 | 21.492 | 43.015 | 35.493 |
+
+##### FalsePositive
+
+| OSFamily | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 5 | 9270083 | 21.492 | 43.015 | 35.493 |
+| 0 | 188617 | 20.563 | 63.946 | 15.491 |
+
+##### TruePositive
+
+| OSFamily | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 5 | 9270083 | 21.492 | 43.015 | 35.493 |
+| 0 | 188617 | 20.563 | 63.946 | 15.491 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 1
+
+>99% Pure : 1
+
+>95% Pure : 1
+
+<80% Pure : 5
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 OSFamily
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## CountryCode
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is low considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **236 unique CountryCode values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 CountryCode
+
+| CountryCode | Count | Count (%) |
+|------:|------:|------:|
+| 242 | 8765035 | 92.13% |
+| 0 | 172989 | 1.82% |
+| 1 | 106364 | 1.12% |
+| 2 | 53639 | 0.56% |
+| 4 | 40268 | 0.42% |
+| 3 | 36374 | 0.38% |
+| 5 | 33464 | 0.35% |
+| 6 | 22871 | 0.24% |
+| 7 | 19315 | 0.20% |
+| 8 | 17916 | 0.19% |
+| 9 | 16729 | 0.18% |
+| 10 | 15823 | 0.17% |
+| 12 | 14851 | 0.16% |
+| 11 | 14028 | 0.15% |
+| 14 | 13465 | 0.14% |
+| 13 | 13431 | 0.14% |
+| 15 | 11472 | 0.12% |
+| 17 | 9582 | 0.10% |
+| 16 | 8989 | 0.09% |
+| 18 | 8867 | 0.09% |
+
+### Observations
+
+- 44 categories appear fewer than 3 times.
+
+- 64 categories appear fewer than 5 times.
+
+- 88 categories appear fewer than 10 times.
+
+- One CountryCode category contributes approximately 92% of the entire dataset.
+
+- The remaining CountryCode values form a highly long-tailed distribution.
+
+- Total unique categories = **236**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 17 |
+| 1000-10000 | 36 |
+| 100-1000 | 37 |
+| 10-100 | 58 |
+| 5-10 | 24 |
+| 3-5 | 20 |
+| 1-3 | 44 |
+
+[pic]
+
+[pic]
+
+- Nearly one CountryCode appears on ~92% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | CountryCode)
+
+##### BenignPositive
+
+- CountryCode values with more than 10,000 incidents were ranked by their BenignPositive percentage. Several CountryCode values exhibit a very high BenignPositive rate, suggesting a strong relationship between CountryCode and the target variable.
+
+| CountryCode | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 242 | 8713696 | 21.991 | 46.966 | 31.044 |
+| 6 | 22871 | 30.130 | 7.827 | 62.044 |
+| 0 | 172989 | 25.004 | 4.678 | 70.317 |
+| 12 | 14851 | 21.527 | 3.549 | 74.924 |
+| 14 | 13465 | 12.618 | 2.889 | 84.493 |
+| 2 | 53639 | 43.304 | 1.885 | 54.811 |
+| 10 | 15823 | 9.707 | 1.839 | 88.454 |
+| 13 | 13431 | 9.076 | 1.802 | 89.122 |
+| 7 | 19315 | 11.147 | 1.610 | 87.243 |
+| 1 | 106364 | 1.931 | 1.451 | 96.618 |
+| 8 | 17916 | 37.821 | 1.005 | 61.174 |
+| 4 | 40268 | 6.194 | 0.934 | 92.873 |
+| 3 | 36374 | 1.325 | 0.795 | 97.880 |
+| 15 | 11472 | 1.560 | 0.732 | 97.707 |
+| 11 | 14028 | 13.544 | 0.577 | 85.878 |
+| 9 | 16729 | 0.903 | 0.281 | 98.816 |
+| 5 | 33464 | 0.442 | 0.027 | 99.531 |
+
+##### FalsePositive
+
+- CountryCode values with more than 10,000 incidents were ranked by their FalsePositive percentage. Several CountryCode values exhibit a very high FalsePositive rate, suggesting a strong relationship between CountryCode and the target variable.
+
+| CountryCode | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 2 | 53639 | 43.304 | 1.885 | 54.811 |
+| 8 | 17916 | 37.821 | 1.005 | 61.174 |
+| 6 | 22871 | 30.130 | 7.827 | 62.044 |
+| 0 | 172989 | 25.004 | 4.678 | 70.317 |
+| 242 | 8713696 | 21.991 | 46.966 | 31.044 |
+| 12 | 14851 | 21.527 | 3.549 | 74.924 |
+| 11 | 14028 | 13.544 | 0.577 | 85.878 |
+| 14 | 13465 | 12.618 | 2.889 | 84.493 |
+| 7 | 19315 | 11.147 | 1.610 | 87.243 |
+| 10 | 15823 | 9.707 | 1.839 | 88.454 |
+| 13 | 13431 | 9.076 | 1.802 | 89.122 |
+| 4 | 40268 | 6.194 | 0.934 | 92.873 |
+| 1 | 106364 | 1.931 | 1.451 | 96.618 |
+| 15 | 11472 | 1.560 | 0.732 | 97.707 |
+| 3 | 36374 | 1.325 | 0.795 | 97.880 |
+| 9 | 16729 | 0.903 | 0.281 | 98.816 |
+| 5 | 33464 | 0.442 | 0.027 | 99.531 |
+
+##### TruePositive
+
+- CountryCode values with more than 10,000 incidents were ranked by their TruePositive percentage. Several CountryCode values exhibit a very high TruePositive rate, suggesting a strong relationship between CountryCode and the target variable.
+
+| CountryCode | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 5 | 33464 | 0.442 | 0.027 | **99.531** |
+| 9 | 16729 | 0.903 | 0.281 | 98.816 |
+| 3 | 36374 | 1.325 | 0.795 | 97.880 |
+| 15 | 11472 | 1.560 | 0.732 | 97.707 |
+| 1 | 106364 | 1.931 | 1.451 | 96.618 |
+| 4 | 40268 | 6.194 | 0.934 | 92.873 |
+| 13 | 13431 | 9.076 | 1.802 | 89.122 |
+| 10 | 15823 | 9.707 | 1.839 | 88.454 |
+| 7 | 19315 | 11.147 | 1.610 | 87.243 |
+| 11 | 14028 | 13.544 | 0.577 | 85.878 |
+| 14 | 13465 | 12.618 | 2.889 | 84.493 |
+| 12 | 14851 | 21.527 | 3.549 | 74.924 |
+| 0 | 172989 | 25.004 | 4.678 | 70.317 |
+| 6 | 22871 | 30.130 | 7.827 | 62.044 |
+| 8 | 17916 | 37.821 | 1.005 | 61.174 |
+| 2 | 53639 | 43.304 | 1.885 | 54.811 |
+| 242 | 8713696 | 21.991 | 46.966 | 31.044 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 57
+
+>99% Pure : 60
+
+>95% Pure : 79
+
+<80% Pure : 86
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 CountryCode
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## State
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is high considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **1368 unique State values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 State
+
+| State | Count | Count (%) |
+|------:|------:|------:|
+| 1445 | 8881881 | 93.35% |
+| 0 | 103828 | 1.09% |
+| 1 | 40264 | 0.42% |
+| 2 | 28846 | 0.30% |
+| 3 | 23036 | 0.24% |
+| 4 | 19124 | 0.20% |
+| 5 | 15754 | 0.17% |
+| 6 | 15563 | 0.16% |
+| 7 | 14468 | 0.15% |
+| 8 | 12474 | 0.13% |
+| 9 | 12076 | 0.13% |
+| 11 | 11976 | 0.13% |
+| 12 | 11515 | 0.12% |
+| 10 | 11502 | 0.12% |
+| 13 | 9780 | 0.10% |
+| 15 | 9333 | 0.10% |
+| 14 | 9207 | 0.10% |
+| 21 | 7263 | 0.08% |
+| 17 | 7144 | 0.08% |
+| 16 | 6928 | 0.07% |
+
+### Observations
+
+- 382 categories appear fewer than 3 times.
+
+- 542 categories appear fewer than 5 times.
+
+- 735 categories appear fewer than 10 times.
+
+- One State category contributes approximately 93% of the entire dataset.
+
+- The remaining State values form a highly long-tailed distribution.
+
+- Total unique categories = **1368**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 14 |
+| 1000-10000 | 71 |
+| 100-1000 | 165 |
+| 10-100 | 383 |
+| 5-10 | 193 |
+| 3-5 | 160 |
+| 1-3 | 382 |
+
+[pic]
+
+[pic]
+
+- Nearly one State appears on ~93% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | State)
+
+##### BenignPositive
+
+| State | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 1445 | 8830542 | 21.863 | 46.391 | 31.746 |
+| 9 | 12076 | 23.683 | 7.022 | 69.294 |
+| 3 | 23036 | 21.597 | 5.782 | 72.621 |
+| 12 | 11515 | 9.301 | 2.710 | 87.990 |
+| 2 | 28846 | 25.664 | 2.250 | 72.086 |
+| 6 | 15563 | 53.653 | 2.223 | 44.124 |
+| 7 | 14468 | 5.135 | 1.645 | 93.220 |
+| 1 | 40264 | 9.674 | 1.527 | 88.799 |
+| 10 | 11502 | 3.686 | 1.443 | 94.870 |
+| 0 | 103828 | 1.587 | 1.421 | 96.992 |
+| 8 | 12474 | 8.778 | 1.178 | 90.043 |
+| 5 | 15754 | 1.631 | 1.085 | 97.283 |
+| 11 | 11976 | 11.607 | 0.893 | 87.500 |
+| 4 | 19124 | 1.543 | 0.115 | 98.342 |
+
+##### FalsePositive
+
+| State | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 6 | 15563 | 53.653 | 2.223 | 44.124 |
+| 2 | 28846 | 25.664 | 2.250 | 72.086 |
+| 9 | 12076 | 23.683 | 7.022 | 69.294 |
+| 1445 | 8830542 | 21.863 | 46.391 | 31.746 |
+| 3 | 23036 | 21.597 | 5.782 | 72.621 |
+| 11 | 11976 | 11.607 | 0.893 | 87.500 |
+| 1 | 40264 | 9.674 | 1.527 | 88.799 |
+| 12 | 11515 | 9.301 | 2.710 | 87.990 |
+| 8 | 12474 | 8.778 | 1.178 | 90.043 |
+| 7 | 14468 | 5.135 | 1.645 | 93.220 |
+| 10 | 11502 | 3.686 | 1.443 | 94.870 |
+| 5 | 15754 | 1.631 | 1.085 | 97.283 |
+| 0 | 103828 | 1.587 | 1.421 | 96.992 |
+| 4 | 19124 | 1.543 | 0.115 | 98.342 |
+
+##### TruePositive
+
+| State | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 4 | 19124 | 1.543 | 0.115 | **98.342** |
+| 5 | 15754 | 1.631 | 1.085 | 97.283 |
+| 0 | 103828 | 1.587 | 1.421 | 96.992 |
+| 10 | 11502 | 3.686 | 1.443 | 94.870 |
+| 7 | 14468 | 5.135 | 1.645 | 93.220 |
+| 8 | 12474 | 8.778 | 1.178 | 90.043 |
+| 1 | 40264 | 9.674 | 1.527 | 88.799 |
+| 12 | 11515 | 9.301 | 2.710 | 87.990 |
+| 11 | 11976 | 11.607 | 0.893 | 87.500 |
+| 3 | 23036 | 21.597 | 5.782 | 72.621 |
+| 2 | 28846 | 25.664 | 2.250 | 72.086 |
+| 9 | 12076 | 23.683 | 7.022 | 69.294 |
+| 6 | 15563 | 53.653 | 2.223 | 44.124 |
+| 1445 | 8830542 | 21.863 | 46.391 | 31.746 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 659
+
+>99% Pure : 671
+
+>95% Pure : 750
+
+<80% Pure : 394
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 State
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## City
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **9342 unique City values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 City
+
+| City | Count | Count (%) |
+|------:|------:|------:|
+| 10630 | 8881250 | 93.35% |
+| 0 | 103393 | 1.09% |
+| 1 | 22308 | 0.23% |
+| 2 | 19424 | 0.20% |
+| 3 | 15869 | 0.17% |
+| 4 | 14441 | 0.15% |
+| 5 | 13845 | 0.15% |
+| 6 | 12003 | 0.13% |
+| 7 | 11499 | 0.12% |
+| 8 | 10827 | 0.11% |
+| 9 | 10570 | 0.11% |
+| 12 | 9906 | 0.10% |
+| 10 | 9736 | 0.10% |
+| 11 | 9207 | 0.10% |
+| 13 | 8848 | 0.09% |
+| 14 | 8027 | 0.08% |
+| 15 | 7409 | 0.08% |
+| 16 | 7261 | 0.08% |
+| 23 | 7143 | 0.08% |
+| 18 | 6962 | 0.07% |
+
+### Observations
+
+- 5037 categories appear fewer than 3 times.
+
+- 6535 categories appear fewer than 5 times.
+
+- 7737 categories appear fewer than 10 times.
+
+- One City category contributes approximately 93% of the entire dataset.
+
+- The remaining City values form a highly long-tailed distribution.
+
+- Total unique categories = **9342**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 11 |
+| 1000-10000 | 73 |
+| 100-1000 | 280 |
+| 10-100 | 1241 |
+| 5-10 | 1202 |
+| 3-5 | 1498 |
+| 1-3 | 5037 |
+
+[pic]
+
+[pic]
+
+- Nearly one City appears on ~93% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | City)
+
+##### BenignPositive
+
+| City | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 10630 | 8829911 | 21.863 | 46.391 | 31.746 |
+| 3 | 15869 | 52.675 | 3.945 | 43.380 |
+| 2 | 19424 | 3.532 | 3.022 | 93.446 |
+| 9 | 10570 | 7.001 | 2.535 | 90.464 |
+| 5 | 13845 | 16.894 | 2.008 | 81.098 |
+| 4 | 14441 | 5.062 | 1.648 | 93.290 |
+| 7 | 11499 | 3.670 | 1.426 | 94.904 |
+| 0 | 103393 | 1.279 | 1.420 | 97.302 |
+| 6 | 12003 | 8.706 | 1.200 | 90.094 |
+| 1 | 22308 | 1.726 | 0.574 | 97.700 |
+| 8 | 10827 | 7.786 | 0.434 | 91.780 |
+
+##### FalsePositive
+
+| City | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 3 | 15869 | 52.675 | 3.945 | 43.380 |
+| 10630 | 8829911 | 21.863 | 46.391 | 31.746 |
+| 5 | 13845 | 16.894 | 2.008 | 81.098 |
+| 6 | 12003 | 8.706 | 1.200 | 90.094 |
+| 8 | 10827 | 7.786 | 0.434 | 91.780 |
+| 9 | 10570 | 7.001 | 2.535 | 90.464 |
+| 4 | 14441 | 5.062 | 1.648 | 93.290 |
+| 7 | 11499 | 3.670 | 1.426 | 94.904 |
+| 2 | 19424 | 3.532 | 3.022 | 93.446 |
+| 1 | 22308 | 1.726 | 0.574 | 97.700 |
+| 0 | 103393 | 1.279 | 1.420 | 97.302 |
+
+##### TruePositive
+
+| City | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 1 | 22308 | 1.726 | 0.574 | **97.700** |
+| 0 | 103393 | 1.279 | 1.420 | 97.302 |
+| 7 | 11499 | 3.670 | 1.426 | 94.904 |
+| 2 | 19424 | 3.532 | 3.022 | 93.446 |
+| 4 | 14441 | 5.062 | 1.648 | 93.290 |
+| 8 | 10827 | 7.786 | 0.434 | 91.780 |
+| 9 | 10570 | 7.001 | 2.535 | 90.464 |
+| 6 | 12003 | 8.706 | 1.200 | 90.094 |
+| 5 | 13845 | 16.894 | 2.008 | 81.098 |
+| 3 | 15869 | 52.675 | 3.945 | 43.380 |
+| 10630 | 8829911 | 21.863 | 46.391 | 31.746 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 7088
+
+>99% Pure : 7106
+
+>95% Pure : 7246
+
+<80% Pure : 1435
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 City
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## DeviceId
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is very high considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **75826 unique DeviceId values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 DeviceId
+
+| DeviceId | Count | Count (%) |
+|------:|------:|------:|
+| 98799 | 9151489 | 96.19% |
+| 0 | 4718 | 0.05% |
+| 1 | 3991 | 0.04% |
+| 4 | 2189 | 0.02% |
+| 5 | 2139 | 0.02% |
+| 6 | 1879 | 0.02% |
+| 12 | 1852 | 0.02% |
+| 7 | 1674 | 0.02% |
+| 8 | 1631 | 0.02% |
+| 10 | 1580 | 0.02% |
+| 9 | 1512 | 0.02% |
+| 11 | 1284 | 0.01% |
+| 13 | 1251 | 0.01% |
+| 15 | 1220 | 0.01% |
+| 16 | 1095 | 0.01% |
+| 14 | 1094 | 0.01% |
+| 18 | 1003 | 0.01% |
+| 22 | 932 | 0.01% |
+| 23 | 861 | 0.01% |
+| 17 | 813 | 0.01% |
+
+### Observations
+
+- 46923 categories appear fewer than 3 times.
+
+- 59934 categories appear fewer than 5 times.
+
+- 69563 categories appear fewer than 10 times.
+
+- One DeviceId category contributes approximately 96% of the entire dataset.
+
+- The remaining DeviceId values form a highly long-tailed distribution.
+
+- Total unique categories = **75826**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 1 |
+| 1000-10000 | 16 |
+| 100-1000 | 202 |
+| 10-100 | 6044 |
+| 5-10 | 9629 |
+| 3-5 | 13011 |
+| 1-3 | 46923 |
+
+[pic]
+
+[pic]
+
+- Nearly one DeviceId appears on ~96% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | DeviceId)
+
+##### BenignPositive
+
+| DeviceId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 98799 | 9101718 | 21.602 | 42.653 | 35.745 |
+
+##### FalsePositive
+
+| DeviceId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 98799 | 9101718 | 21.602 | 42.653 | 35.745 |
+
+##### TruePositive
+
+| DeviceId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 98799 | 9101718 | 21.602 | 42.653 | 35.745 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 72863
+
+>99% Pure : 72870
+
+>95% Pure : 72926
+
+<80% Pure : 2017
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 DeviceId
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
+
+
+## ApplicationId
+
+- No need for standardization.
+
+- No missing values.
+
+- Data type is `int64` in every chunk.
+
+### Cardinality
+
+- Cardinality is relatively low considering the dataset size.
+
+- Number of unique values varies slightly across chunks.
+
+- Taking the union across all chunks gives **1728 unique ApplicationId values** in the training data.
+
+### Frequency Distribution
+
+#### Top 20 ApplicationId
+
+| ApplicationId | Count | Count (%) |
+|------:|------:|------:|
+| 2251 | 9301360 | 97.76% |
+| 0 | 61828 | 0.65% |
+| 1 | 38366 | 0.40% |
+| 2 | 36682 | 0.39% |
+| 3 | 31732 | 0.33% |
+| 4 | 22505 | 0.24% |
+| 5 | 5693 | 0.06% |
+| 6 | 2803 | 0.03% |
+| 7 | 2565 | 0.03% |
+| 8 | 1713 | 0.02% |
+| 9 | 1002 | 0.01% |
+| 10 | 686 | 0.01% |
+| 11 | 567 | 0.01% |
+| 12 | 484 | 0.01% |
+| 13 | 359 | 0.00% |
+| 14 | 298 | 0.00% |
+| 15 | 238 | 0.00% |
+| 16 | 201 | 0.00% |
+| 17 | 140 | 0.00% |
+| 19 | 91 | 0.00% |
+
+### Observations
+
+- 1456 categories appear fewer than 3 times.
+
+- 1557 categories appear fewer than 5 times.
+
+- 1631 categories appear fewer than 10 times.
+
+- One ApplicationId category contributes approximately 98% of the entire dataset.
+
+- The remaining ApplicationId values form a highly long-tailed distribution.
+
+- Total unique categories = **1728**.
+
+| Appearance | Categories |
+|-----------:|-----------:|
+| 10000+ | 6 |
+| 1000-10000 | 5 |
+| 100-1000 | 8 |
+| 10-100 | 78 |
+| 5-10 | 74 |
+| 3-5 | 101 |
+| 1-3 | 1456 |
+
+[pic]
+
+[pic]
+
+- Nearly one ApplicationId appears on ~98% of the data.
+
+[pic]
+
+- We can observe how thin the line gets even when we plotted it on top 50 proving the skewness of the data, with one category contributing overwhelmingly more than the remaining categories.
+
+### Target Distribution
+
+#### Conditional Target Distribution (Target | ApplicationId)
+
+##### BenignPositive
+
+| ApplicationId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 3 | 31732 | 15.924 | 53.652 | 30.424 |
+| 2 | 36682 | 25.296 | 52.549 | 22.155 |
+| 1 | 38366 | 20.338 | 44.592 | 35.070 |
+| 2251 | 9250021 | 21.314 | 43.547 | 35.139 |
+| 0 | 61828 | 16.140 | 32.131 | 51.729 |
+| 4 | 22505 | 99.831 | 0.111 | 0.058 |
+
+##### FalsePositive
+
+| ApplicationId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 4 | 22505 | 99.831 | 0.111 | 0.058 |
+| 2 | 36682 | 25.296 | 52.549 | 22.155 |
+| 2251 | 9250021 | 21.314 | 43.547 | 35.139 |
+| 1 | 38366 | 20.338 | 44.592 | 35.070 |
+| 0 | 61828 | 16.140 | 32.131 | 51.729 |
+| 3 | 31732 | 15.924 | 53.652 | 30.424 |
+
+##### TruePositive
+
+| ApplicationId | Total Count | FalsePositive (%) | BenignPositive (%) | TruePositive (%) |
+|------:|------------:|------------------:|-------------------:|------------------:|
+| 0 | 61828 | 16.140 | 32.131 | **51.729** |
+| 2251 | 9250021 | 21.314 | 43.547 | 35.139 |
+| 1 | 38366 | 20.338 | 44.592 | 35.070 |
+| 3 | 31732 | 15.924 | 53.652 | 30.424 |
+| 2 | 36682 | 25.296 | 52.549 | 22.155 |
+| 4 | 22505 | 99.831 | 0.111 | 0.058 |
+
+#### Dominant Class Category
+
+[pic]
+
+#### Purity Statistics
+
+100% Pure : 1379
+
+>99% Pure : 1380
+
+>95% Pure : 1381
+
+<80% Pure : 322
+
+#### Entrory Distribution
+
+[pic]
+
+#### Target Distribtution for top 20 ApplicationId
+
+[pic]
+
+#### Dominant Class Count
+
+[pic]
